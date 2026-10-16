@@ -13,7 +13,7 @@ def unauthorized_response() -> tuple[Response, int]:
     Introduction:
         - This function builds the shared response for any authentication failure
     Returns:
-        - A JSON error payload with a 401 status
+        - tuple[Response, int]: A JSON error payload with a 401 status
     """
 
     # Return the shared error payload with a 401 status
@@ -25,7 +25,7 @@ def handle_missing_token(reason: str) -> tuple[Response, int]:
     Introduction:
         - This callback runs when the request does not include a token
     Returns:
-        - A JSON error payload with a 401 status
+        - tuple[Response, int]: A JSON error payload with a 401 status
     """
 
     # Delegate to the unified response
@@ -37,7 +37,7 @@ def handle_invalid_token(reason: str) -> tuple[Response, int]:
     Introduction:
         - This callback runs when the token is malformed or its signature is invalid
     Returns:
-        - A JSON error payload with a 401 status
+        - tuple[Response, int]: A JSON error payload with a 401 status
     """
 
     # Delegate to the unified response
@@ -49,7 +49,7 @@ def handle_expired_token(jwt_header: dict, jwt_payload: dict) -> tuple[Response,
     Introduction:
         - This callback runs when the token has expired
     Returns:
-        - A JSON error payload with a 401 status
+        - tuple[Response, int]: A JSON error payload with a 401 status
     """
 
     # Delegate to the unified response

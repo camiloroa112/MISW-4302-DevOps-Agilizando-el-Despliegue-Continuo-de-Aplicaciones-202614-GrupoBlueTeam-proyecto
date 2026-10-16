@@ -17,7 +17,7 @@ def get_missing_variables() -> list[str]:
     Introduction:
         - This function checks the required environment variables for the application
     Returns:
-        - A list of missing variables
+        - list[str]: A list of missing variables
     """
     
     # Check each required variable against the current environment

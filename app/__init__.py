@@ -4,6 +4,7 @@ from app.extensions import db, jwt, ma
 from app.auth import register_jwt_callbacks
 from app.resources.health import HealthResource
 from app.config import Config, get_missing_variables
+from app.resources.blacklist_create import BlacklistCreateResource
 
 # 3rd Party Imports
 from flask import Flask
@@ -57,6 +58,9 @@ def create_app(config_class = Config) -> Flask:
 
     # Register the health check endpoint
     api.add_resource(HealthResource, "/health")
+
+    # Register the endpoint that adds emails to the blacklist
+    api.add_resource(BlacklistCreateResource, "/blacklists")
 
     # Return the configured app
     return app
