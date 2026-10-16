@@ -10,7 +10,7 @@ class HealthResource(Resource):
         Introduction:
             - This endpoint is used by the Beanstalk load balancer health check
         Returns:
-            - A minimal status payload
+            - tuple[dict, int]: A minimal status payload
         """
         
         # Return a minimal status payload
