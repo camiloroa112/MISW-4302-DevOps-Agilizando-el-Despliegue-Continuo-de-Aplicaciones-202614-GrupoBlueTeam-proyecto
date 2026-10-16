@@ -26,6 +26,14 @@ share/python-wheels/
 *.egg
 MANIFEST
 
+# Environment variables
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+.env
+*.zip
+
 # PyInstaller
 #   Usually these files are written by a python script from a template
 #   before PyInstaller builds the exe, so as to inject date/other infos into it.
@@ -151,6 +159,7 @@ activemq-data/
 
 # Environments
 .env
+.env.example
 .envrc
 .venv
 env/
