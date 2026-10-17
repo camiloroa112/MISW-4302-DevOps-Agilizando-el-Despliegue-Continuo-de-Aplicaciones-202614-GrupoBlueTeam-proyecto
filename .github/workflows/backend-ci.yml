@@ -1,0 +1,178 @@
+name: Backend CI/CD (Python/Flask)
+
+on:
+  push:
+    branches:
+      - develop
+      - main
+      - master
+      - "feature/**"
+      - "release/**"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: backend-ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  python-ci:
+    name: Python (verify, test, build check, coverage)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    if: >
+      github.event_name == 'push' &&
+      startsWith(github.event.head_commit.message, 'MERGE:')
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          version: "0.9"
+          enable-cache: true
+
+      - name: Sync dependencies
+        run: uv sync --frozen --dev
+
+      - name: Verify Python version
+        run: uv run python --version
+
+      - name: Verify lock file is up to date
+        run: uv lock --locked
+
+      - name: Check module compilation
+        run: uv run python -m compileall app tests scripts application.py
+
+      - name: Run tests
+        run: uv run pytest -v
+
+      - name: Build check (import application modules)
+        run: |
+          uv run python -c "
+          import app.config
+          import app.extensions
+          import app.models
+          import app.schemas
+          import app.auth
+          import app.resources.blacklist_create
+          import app.resources.health
+          print('Modules imported successfully')
+          "
+
+      - name: Unit tests with coverage
+        run: uv run --with pytest-cov pytest -v --cov=app --cov-report=xml --cov-report=term
+
+      - name: Upload coverage artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: python-coverage
+          path: coverage.xml
+          if-no-files-found: error
+
+  promote_one_step:
+    name: Promote branch one step
+    needs: python-ci
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    if: >
+      success() &&
+      github.event_name == 'push' &&
+      startsWith(github.event.head_commit.message, 'MERGE:') && (
+        startsWith(github.ref_name, 'feature/') ||
+        github.ref_name == 'develop' ||
+        startsWith(github.ref_name, 'release/')
+      )
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - run: |
+          git config user.name "github-actions"
+          git config user.email "github-actions@users.noreply.github.com"
+
+      - id: plan
+        shell: bash
+        run: |
+          SRC="${GITHUB_REF_NAME}"
+
+          if [[ "$SRC" == feature/* ]]; then
+            echo "mode=promote" >> "$GITHUB_OUTPUT"
+            echo "dst=develop" >> "$GITHUB_OUTPUT"
+            echo "delete_src=true" >> "$GITHUB_OUTPUT"
+          elif [[ "$SRC" == "develop" ]]; then
+            TS=$(TZ=America/Bogota date +'%m%d%y-%H%M')
+            echo "mode=create_release" >> "$GITHUB_OUTPUT"
+            echo "dst=release/develop-release-${TS}" >> "$GITHUB_OUTPUT"
+            echo "delete_src=false" >> "$GITHUB_OUTPUT"
+          elif [[ "$SRC" == release/* ]]; then
+            echo "mode=promote" >> "$GITHUB_OUTPUT"
+            echo "dst=main" >> "$GITHUB_OUTPUT"
+            echo "delete_src=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "mode=none" >> "$GITHUB_OUTPUT"
+            echo "dst=" >> "$GITHUB_OUTPUT"
+            echo "delete_src=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Set up uv
+        if: steps.plan.outputs.mode == 'promote'
+        uses: astral-sh/setup-uv@v5
+        with:
+          version: "0.9"
+          enable-cache: true
+
+      - name: Create release branch from develop and push
+        if: steps.plan.outputs.mode == 'create_release'
+        env:
+          SRC: ${{ github.ref_name }}
+          DST: ${{ steps.plan.outputs.dst }}
+        run: |
+          set -e
+          git fetch origin --prune
+          git checkout -B "$DST" "origin/$SRC"
+          git push -u origin "$DST"
+
+      - name: Temp merge test
+        if: steps.plan.outputs.mode == 'promote'
+        env:
+          SRC: ${{ github.ref_name }}
+          DST: ${{ steps.plan.outputs.dst }}
+          SHA: ${{ github.sha }}
+        run: |
+          set -e
+          git fetch origin --prune
+
+          TMP="tmp/merge-${SRC//\//-}-into-${DST}-${SHA:0:7}"
+          git checkout -B "$TMP" "origin/$DST"
+          git merge --no-ff "origin/$SRC" -m "MERGE: $SRC -> $DST (temp test)"
+
+          uv sync --frozen --dev
+          uv run python -m compileall app tests scripts application.py
+          uv run pytest -v
+
+      - name: Promote to destination branch
+        if: steps.plan.outputs.mode == 'promote'
+        env:
+          SRC: ${{ github.ref_name }}
+          DST: ${{ steps.plan.outputs.dst }}
+        run: |
+          set -e
+          git fetch origin --prune
+          git checkout -B "$DST" "origin/$DST"
+          git merge --no-ff "origin/$SRC" -m "MERGE: $SRC -> $DST"
+          git push origin "$DST"
+
+      - name: Delete source branch after successful promote
+        if: steps.plan.outputs.mode == 'promote' && steps.plan.outputs.delete_src == 'true'
+        env:
+          SRC: ${{ github.ref_name }}
+        run: |
+          set -e
+          git push origin --delete "$SRC"
