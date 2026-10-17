@@ -152,12 +152,44 @@ Ejemplo de solicitud:
 
 ### `GET /blacklists/<email>`
 
-Consulta si un email está en la lista negra. El email se normaliza a minúsculas.
+Consulta si un email está en la lista negra global. El email se envía como parámetro de la URL y se normaliza a minúsculas antes de consultar la base de datos.
+
+| Parámetro | Tipo | Obligatorio | Regla |
+|---|---|---|---|
+| `email` | String (path) | Sí | Formato válido, máximo 254 caracteres |
+
+Ejemplo de solicitud:
+
+```http
+GET /blacklists/cliente@example.com
+Authorization: Bearer <token>
+```
+
+Ejemplo de respuesta cuando el email **está bloqueado**:
+
+```json
+{
+  "email": "cliente@example.com",
+  "is_blacklisted": true,
+  "blocked_reason": "Compliance request"
+}
+```
+
+Ejemplo de respuesta cuando el email **no está bloqueado**:
+
+```json
+{
+  "email": "cliente@example.com",
+  "is_blacklisted": false,
+  "blocked_reason": null
+}
+```
 
 | Código | Caso | Respuesta |
 |---|---|---|
 | 200 | Está bloqueado | `{"email": "...", "is_blacklisted": true, "blocked_reason": "..."}` |
 | 200 | No está bloqueado | `{"email": "...", "is_blacklisted": false, "blocked_reason": null}` |
+| 400 | Email vacío o con formato inválido | `{"msg": "Invalid request", "errors": {"email": [...]}}` |
 | 401 | Token ausente o inválido | `{"msg": "Missing or invalid token"}` |
 
 ### `GET /health`
