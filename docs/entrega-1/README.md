@@ -28,7 +28,7 @@ Proyecto del curso MISW-4302 DevOps: Agilizando el Despliegue Continuo de Aplica
     - [Estrategias de despliegue](#estrategias-de-despliegue)
       - [All at once](#all-at-once)
       - [Rolling](#rolling)
-      - [Rolling with aditional batch](#rolling-with-aditional-batch)
+      - [Rolling with additional batch](#rolling-with-additional-batch)
       - [Immutable](#immutable)
       - [Comparación](#comparación)
   - [Flujo de trabajo con Git](#flujo-de-trabajo-con-git)
@@ -339,7 +339,7 @@ La configuración predeterminada para la aplicación es de 3 a 6 instancias auto
 
 #### Rolling
 
-En la estragia rolling se toman bache de instancias, y se hace el despliegue. El beneficio de esta estrategia frente all at once es que se va mantener el servicio con una capacidad reducida en vez de perder todo el servicio, con la desventaja de que toma mas tiempo actualizar todas las instancias.
+En la estrategia rolling se toman baches de instancias, y se hace el despliegue. El beneficio de esta estrategia frente all at once es que se va mantener el servicio con una capacidad reducida en vez de perder todo el servicio, con la desventaja de que toma mas tiempo actualizar todas las instancias.
 
 Para esta estrategia se configuraron baches de 30% del numero de instancias con el objetivo de no reducir tanto la capacidad de manejo de peticiones de la aplicación.
 
@@ -354,7 +354,7 @@ Para esta estrategia se configuraron baches de 30% del numero de instancias con 
 
 [← Volver al inicio](#tabla-de-contenido)
 
-#### Rolling with aditional batch
+#### Rolling with additional batch
 
 Muy similar a la estrategia de Rolling tradicional, solo que esta agrega un bache nuevo de instancias para compensar por la capacidad de computo perdida por cada bache que sale de servicio para actualizar.
 
@@ -373,13 +373,6 @@ Muy similar a la estrategia de Rolling tradicional, solo que esta agrega un bach
 - Tiempo de despliegue:
 
 <img width="638" height="86" alt="image" src="https://github.com/user-attachments/assets/53f3560a-8898-48d7-bfd4-1dade60517ba" />
-
-| Integrante | Correo Uniandes | Usuario GitHub |
-|---|---|---|
-| Carlos Ortiz | cd.ortiz@uniandes.edu.co | [cdof00](https://github.com/cdof00) |
-| Camilo Roa | ca.roac@uniandes.edu.co | [camiloroa112](https://github.com/camiloroa112) |
-| Joseph Gutiérrez | jm.gutierrez23@uniandes.edu.co | [josephgutierrez23](https://github.com/josephgutierrez23) |
-| Steven Garzón | sr.garzon@uniandes.edu.co | [stevengr7](https://github.com/stevengr7) | src="https://github.com/
 
 - Se conservan los mismos hallazgos que el Rolling normal, solo que este al tener que inicializar una nueva instancia toma un poco más de tiempo.
 
