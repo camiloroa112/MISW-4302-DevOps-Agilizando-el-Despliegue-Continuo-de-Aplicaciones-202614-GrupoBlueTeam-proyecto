@@ -362,7 +362,7 @@ Muy similar a la estrategia de Rolling tradicional, solo que esta agrega un bach
 - El despliegue se validó usando el manejador de eventos de EB y la lista de despliegues de EB, el cual nos muestra la hora exacta de inicio, la estrategia de despliegue y el tiempo que tomó. Con este metodo el despliegue tomó 10 minutos y 26 segundos.
 - Con esta estrategia de despliegue tampoco fueron reemplazadas las instancias, el despliegue se hizo de forma progresiva una instancia a la vez por la configuración del 30% de instancias por bache. Este metodo inicializó un bache extra para compensar por el computo perdido.
   
-<img width="553" height="272" alt="image" src="https://github.com/user-attachments/assets/ccc64b5e-418a-4a4b-83da-6dc608fac7ce" />
+<img width="1000" height="272" alt="image" src="https://github.com/user-attachments/assets/ccc64b5e-418a-4a4b-83da-6dc608fac7ce" />
 
 - Una vez terminado el deployment, la nueva instancia es apagada.
   
