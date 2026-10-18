@@ -241,7 +241,57 @@ Solo incluye archivos versionados, así que `.env` y `.venv` nunca se cuelan.
 
 ### Estrategias de despliegue
 
-*Pendiente.*
+####All at one
+En la estrategia de despliegue all at once, EB tumba todas las instancias activas actualmente, las actualiza y las vuelve a subir, esto resulta en una baja del servicio la cual tiene una duración igual al tiempo de despliegue y levantamiento de las instancias.
+La configuración predeterminada para la aplicación es de 3 a 6 instancias autoescalables como lo recomienda el enunciado, 
+- Se usaron 3 instancias ya que este es el limite inferior de la configuración recomendada.
+- El despliegue se validó usando el manejador de eventos de EB y la lista de despliegues de EB, el cual nos muestra la hora exacta de inicio, la estrategia de despliegue y el tiempo que tomó. Con este metodo el despliegue tomó 28 segundos.
+- El despliegue se realizó sobre las mismas instancias que ya estaban activas, esto fue comprobado comparando los ID de las instancias activas en EC2.
+- Tiempo de despliegue:
+- <img width="1653" height="738" alt="image" src="https://github.com/user-attachments/assets/ca327dea-0cff-4f51-8b0a-0a50b4b253e6" />
+- Instancias activas de EC2 antes y después del despliegue:
+- Antes: <img width="577" height="234" alt="image" src="https://github.com/user-attachments/assets/7a090656-4953-49cc-b722-29532711049d" />
+- Despues: <img width="562" height="250" alt="image" src="https://github.com/user-attachments/assets/a929ca8a-81c2-4cef-a56a-e033af5018ff" />
+- Los hallazgos que tuvimos fue que esta forma de deploy no toma mucho tiempo en el caso de esta aplicación, pero durante ese periodo se pierde acceso completamente a todas la funcionalidades.
+
+####Rolling
+En la estragia rolling se toman baches de instancias, y se hace el despliegue. El beneficio de esta estrategia frente all at once es que se va mantener el servicio con una capacidad reducida en vez de perder todo el servicio, con la desventaja de que toma mas tiempo actualizar todas las instancias.
+Para esta estrategia se configuraron baches de 30% del numero de instancias con el objetivo de no reducir tanto la capacidad de manejo de peticiones de la aplicación.
+- Se usaron 3 instancias ya que este es el limite inferior de la configuración recomendada.
+- El despliegue se validó usando el manejador de eventos de EB y la lista de despliegues de EB, el cual nos muestra la hora exacta de inicio, la estrategia de despliegue y el tiempo que tomó. Con este metodo el despliegue tomó 8 minutos y 34 segundos.
+- Con esta estrategia de despliegue tampoco fueron reemplazadas las instancias, el despliegue se hizo de forma progresiva una instancia a la vez por la configuración del 30% de instancias por bache.
+- Tiempo de despliegue:
+- <img width="636" height="95" alt="image" src="https://github.com/user-attachments/assets/c18c6711-3a54-4d5e-8a1a-13217f5b0762" />
+- Nuestros hallazgos fueron que esta politica nos permite mantener servidores activos, lo cual reduce interrupciones al servicio. Pero tiene ciertas desventajas, toma mucho más tiempo que el all at once, y puede causar inconsistencias en comportamiento si no se tienen medidas, ya que durante el tiempo de despliegue se puede dirigir al usuario a una instancia con un versión anterior.
+
+####Rolling with aditional batch
+Muy similar a la estrategia de Rolling tradicional, solo que esta agrega un bache nuevo de instancias para compensar por la capacidad de computo perdida por cada bache que sale de servicio para actualizar
+- Se usaron 3 instancias ya que este es el limite inferior de la configuración recomendada.
+- El despliegue se validó usando el manejador de eventos de EB y la lista de despliegues de EB, el cual nos muestra la hora exacta de inicio, la estrategia de despliegue y el tiempo que tomó. Con este metodo el despliegue de 10 minutos y 26 segundos.
+- Con esta estrategia de despliegue tampoco fueron reemplazadas las instancias, el despliegue se hizo de forma progresiva una instancia a la vez por la configuración del 30% de instancias por bache. Este metodo inicializó un bache extra para compensar por el computo perdido.
+- <img width="1034" height="272" alt="image" src="https://github.com/user-attachments/assets/ccc64b5e-418a-4a4b-83da-6dc608fac7ce" />
+- Una vez terminado el deployment, la nueva instancia es apagada.
+- <img width="553" height="270" alt="image" src="https://github.com/user-attachments/assets/4b05793e-7440-4aea-a33b-82de67432254" />
+- Tiempo de despliegue:
+- <img width="638" height="86" alt="image" src="https://github.com/user-attachments/assets/53f3560a-8898-48d7-bfd4-1dade60517ba" />
+- Se conservan los mismos hallazgos que el Rolling normal, solo que este al tener que inicializar una nueva instancia toma un poco más de tiempo.
+
+####Immutable
+Con esta estrategia, el grupo de autoescalado es reemplazado por otro, inicialemnte se crea un grupo temporal donde se inicializa una instancia, si el despliegue falla se cancela el cambio y se hace un rollback
+Si es cambio es exitoso en la instancia de prueba, se inicializan nuevas instancias duplicando las actuales, cuando se completa se apaga el grupo de autoescalado y todo el trafico es redirigido al nuevo.
+- Se usaron 3 instancias ya que este es el limite inferior de la configuración recomendada.
+- El despliegue se validó usando el manejador de eventos de EB y la lista de despliegues de EB, el cual nos muestra la hora exacta de inicio, la estrategia de despliegue y el tiempo que tomó. Con este metodo el despliegue de 19 minutos y 53 segundos.
+- Durante el despliegue podemos ver que se duplica el numero de instancias (La que aparece terminated es la temporal que se creó con Rolling)
+- <img width="887" height="383" alt="image" src="https://github.com/user-attachments/assets/e611971b-9ab8-4057-96a0-d61eb0f4dab3" />
+- Y podemos ver que ahora tenemos 2 grupos de autoescalado:
+- <img width="1170" height="323" alt="image" src="https://github.com/user-attachments/assets/913767dd-fd86-41be-a017-5181614bfc99" />
+- Al terminar podemos ver que todo se desplegó sobre nuevas instancias y que las originales se encuentran apagadas
+- <img width="1015" height="374" alt="image" src="https://github.com/user-attachments/assets/02bb55d1-7644-42eb-93b0-73624943f9cb" />
+- Tiempo de despliegue:
+- <img width="648" height="94" alt="image" src="https://github.com/user-attachments/assets/3d9a684a-dadc-4b7b-9ae0-fb8716291b99" />
+- Lo que pudimos ver es que este metodo es el más lento de los probados por un gran margen, ya que tiene que disponibilizar un nuevo grupo de instancias se está replicando la configuración actual más el tiempo que toman las validaciones y el apagado del grupo original de instancias. Tambien es el que mas cuesta, ya que temporalmente duplica el numero de instancias y si se usan instancias de alto costo o muchas instancias puede tener un costo elevado. Por ultimo esta estrategia nos parecio la mas efectiva, ya que se hace con 0 downtime, mientras se configura el nuevo grupo y se valida qeu funcione de forma correcta, el original sigue funcionando, y cuando se termina el trafico es redirigido inmediatamente al nuevo grupo.
+
+
 
 ## Flujo de trabajo con Git
 
