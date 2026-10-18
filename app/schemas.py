@@ -4,7 +4,6 @@ from app.extensions import ma
 # 3rd Party Imports
 from marshmallow import fields, pre_load, validate
 
-
 # Normalize an email so "Juan@Mail.com " and "juan@mail.com" are treated as the same
 def normalize_email(value: str) -> str:
     """
@@ -17,19 +16,21 @@ def normalize_email(value: str) -> str:
     # Remove surrounding spaces and lowercase the whole address
     return value.strip().lower()
 
-
 # Validation rules for the POST /blacklists request body
 class BlacklistCreateSchema(ma.Schema):
+    """
+    Introduction:
+        - This schema validates the request body for the POST /blacklists endpoint.
+    """
+    
     # Required email with valid format, at most 254 characters
-    email = fields.Email(required=True, validate=validate.Length(max=254))
+    email = fields.Email(required = True, validate=validate.Length(max = 254))
 
     # Required client application identifier in UUID format
-    app_uuid = fields.UUID(required=True)
+    app_uuid = fields.UUID(required = True)
 
     # Optional reason, None when omitted, at most 255 characters
-    blocked_reason = fields.String(
-        load_default=None, allow_none=True, validate=validate.Length(max=255)
-    )
+    blocked_reason = fields.String(load_default = None, allow_none = True, validate=validate.Length(max = 255))
 
     # Normalize the email before validation runs
     @pre_load
@@ -43,21 +44,25 @@ class BlacklistCreateSchema(ma.Schema):
 
         # Only normalize strings; any other type will fail validation afterwards
         if isinstance(data.get("email"), str):
+            
             # Copy the payload so the original request data is not mutated
             data = {**data, "email": normalize_email(data["email"])}
 
         # Return the (possibly) normalized payload
         return data
-
 
 # Shared schema instance used by the POST resource
 blacklist_create_schema = BlacklistCreateSchema()
 
-
 # Validation rules for the GET /blacklists/<email> URL parameter
 class BlacklistQuerySchema(ma.Schema):
+    """
+    Introduction:
+        - This schema validates the URL parameter for the GET /blacklists/<email> endpoint.
+    """
+    
     # Required email with valid format, at most 254 characters
-    email = fields.Email(required=True, validate=validate.Length(max=254))
+    email = fields.Email(required = True, validate = validate.Length(max = 254))
 
     # Normalize the email before validation runs
     @pre_load
@@ -71,12 +76,12 @@ class BlacklistQuerySchema(ma.Schema):
 
         # Only normalize strings; any other type will fail validation afterwards
         if isinstance(data.get("email"), str):
+            
             # Copy the payload so the original request data is not mutated
             data = {**data, "email": normalize_email(data["email"])}
 
         # Return the (possibly) normalized payload
         return data
-
 
 # Shared schema instance used by the GET resource
 blacklist_query_schema = BlacklistQuerySchema()
