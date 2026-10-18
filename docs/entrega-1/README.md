@@ -261,8 +261,9 @@ Health check para Elastic Beanstalk. No requiere token. Responde `{"status": "ok
 La colección está en [`postman/`](../../postman/) y en linea [Coleccion Online](https://www.postman.com/cd-ortiz-4891041/workspace/blueteam-devops/collection/49240404-3bfa60c1-f5d3-43ae-97cd-8386f5147838?action=share&creator=49240404). Para usarla:
 
 1. **Import** del archivo `.json` en Postman.
-2. En la colección → **Variables**, completa la columna **Current value** de `base_url` (sin `/` al final) y `token`. No uses **Initial value**: se sincroniza con el workspace y aparece en la documentación publicada.
+2. En la colección → **Variables**, completa la columna **Current value** de `base_url` con las URL http://blacklist-service-env.eba-vezsut9e.us-east-2.elasticbeanstalk.com (sin `/` al final) y `token` con el token fijo JWT. No uses **Initial value**: se sincroniza con el workspace y aparece en la documentación publicada.
 3. **Run collection**.
+4. Para correr la colección de la peticion GET es recomendable agregar un correo manualmente a la lista y consultar ese mismo correo.
 
 Los escenarios de creación generan un email único en cada ejecución, así que la colección puede correrse varias veces.
 
