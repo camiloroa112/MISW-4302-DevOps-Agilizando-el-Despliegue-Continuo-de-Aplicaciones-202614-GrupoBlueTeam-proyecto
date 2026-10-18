@@ -258,7 +258,7 @@ Health check para Elastic Beanstalk. No requiere token. Responde `{"status": "ok
 
 ## Postman
 
-La colección está en [`postman/`](postman/). Para usarla:
+La colección está en [`postman/`](../../postman/) y en linea [Coleccion Online](https://www.postman.com/cd-ortiz-4891041/workspace/blueteam-devops/collection/49240404-3bfa60c1-f5d3-43ae-97cd-8386f5147838?action=share&creator=49240404). Para usarla:
 
 1. **Import** del archivo `.json` en Postman.
 2. En la colección → **Variables**, completa la columna **Current value** de `base_url` (sin `/` al final) y `token`. No uses **Initial value**: se sincroniza con el workspace y aparece en la documentación publicada.
@@ -266,7 +266,7 @@ La colección está en [`postman/`](postman/). Para usarla:
 
 Los escenarios de creación generan un email único en cada ejecución, así que la colección puede correrse varias veces.
 
-Documentación publicada: *pendiente*.
+Documentación publicada: [`Documentacion`](https://documenter.getpostman.com/view/49240404/2sBYHSy162).
 
 [← Volver al inicio](#tabla-de-contenido)
 
