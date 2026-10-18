@@ -6,19 +6,30 @@ Universidad de los Andes · DevOps
 
 ## Tabla de contenido
 
-- [Objetivos](#objetivos)
-- [Tiempo de dedicación](#tiempo-de-dedicación)
-- [Lecturas previas](#lecturas-previas)
-- [Esquema de evaluación](#esquema-de-evaluación)
-- [Lugar y formato de entrega](#lugar-y-formato-de-entrega)
-- [Infraestructura requerida](#infraestructura-requerida)
-- [Stack tecnológico](#stack-tecnológico)
-- [Alcance de la entrega](#alcance-de-la-entrega)
-- [Desarrollo de la aplicación](#desarrollo-de-la-aplicación)
-- [Diseño del API REST](#diseño-del-api-rest)
-- [Documentación del API REST](#documentación-del-api-rest)
-- [Documento de la entrega](#documento-de-la-entrega)
-- [Sustentación de la entrega](#sustentación-de-la-entrega)
+- [MISW-4302-DevOps-Agilizando-el-Despliegue-Continuo-de-Aplicaciones-202614-GrupoBlueTeam-proyecto](#misw-4302-devops-agilizando-el-despliegue-continuo-de-aplicaciones-202614-grupoblueteam-proyecto)
+  - [Entrega 1 – Despliegue manual de un microservicio sobre un servicio PaaS](#entrega-1--despliegue-manual-de-un-microservicio-sobre-un-servicio-paas)
+  - [Tabla de contenido](#tabla-de-contenido)
+  - [Objetivos](#objetivos)
+  - [Tiempo de dedicación](#tiempo-de-dedicación)
+  - [Lecturas previas](#lecturas-previas)
+  - [Esquema de evaluación](#esquema-de-evaluación)
+  - [Lugar y formato de entrega](#lugar-y-formato-de-entrega)
+  - [Infraestructura requerida](#infraestructura-requerida)
+  - [Stack tecnológico](#stack-tecnológico)
+  - [Alcance de la entrega](#alcance-de-la-entrega)
+  - [Desarrollo de la aplicación](#desarrollo-de-la-aplicación)
+    - [Agregar un email (POST)](#agregar-un-email-post)
+    - [Consultar un email (GET)](#consultar-un-email-get)
+  - [Diseño del API REST](#diseño-del-api-rest)
+    - [`POST /blacklists`](#post-blacklists)
+    - [`GET /blacklists/<string:email>`](#get-blacklistsstringemail)
+    - [Consideraciones](#consideraciones)
+  - [Documentación del API REST](#documentación-del-api-rest)
+  - [Documento de la entrega](#documento-de-la-entrega)
+    - [1. Paso a paso del despliegue (10%)](#1-paso-a-paso-del-despliegue-10)
+    - [2. Estrategias de despliegue (20%)](#2-estrategias-de-despliegue-20)
+  - [Sustentación de la entrega](#sustentación-de-la-entrega)
+- [Desarrollo - Entrega 1](#desarrollo---entrega-1)
 
 ---
 
@@ -198,3 +209,6 @@ Por cada estrategia, documentar:
 - **No** cuenta como sustentación mostrar únicamente el contenido del PDF, ya que el tutor lo revisará aparte.
 - ⚠️ **Sin video no hay sustentación**, y la entrega se califica con **0.0**.
 - El tutor también podrá citar al grupo a una **sustentación síncrona**.
+
+# Desarrollo - Entrega 1
+La ruta del enlace se encuentra en el archivo [README.md](https://github.com/camiloroa112/MISW-4302-DevOps-Agilizando-el-Despliegue-Continuo-de-Aplicaciones-202614-GrupoBlueTeam-proyecto/blob/main/docs/entrega-1/README.md)
