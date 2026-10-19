@@ -2,6 +2,8 @@
 
 Microservicio REST que gestiona la lista negra global de emails de la organización. Permite agregar emails a la lista negra y consultar si un email se encuentra bloqueado.
 
+La sustentación en video la pueden encontrar en el siguiente link: [VIDEO](https://youtu.be/NcRHI7uS3iY)
+
 Proyecto del curso MISW-4302 DevOps: Agilizando el Despliegue Continuo de Aplicaciones - Universidad de los Andes. El enunciado completo está en [`main/README.md`](https://github.com/camiloroa112/MISW-4302-DevOps-Agilizando-el-Despliegue-Continuo-de-Aplicaciones-202614-GrupoBlueTeam-proyecto/blob/main/README.md).
 
 ## Tabla de Contenido
