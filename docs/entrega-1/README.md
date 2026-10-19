@@ -2,7 +2,7 @@
 
 Microservicio REST que gestiona la lista negra global de emails de la organización. Permite agregar emails a la lista negra y consultar si un email se encuentra bloqueado.
 
-Proyecto del curso MISW-4302 DevOps: Agilizando el Despliegue Continuo de Aplicaciones - Universidad de los Andes. El enunciado completo está en [`docs/enunciado.md`](docs/enunciado.md).
+Proyecto del curso MISW-4302 DevOps: Agilizando el Despliegue Continuo de Aplicaciones - Universidad de los Andes. El enunciado completo está en [`README.md`](README.md).
 
 ## Tabla de Contenido
 
