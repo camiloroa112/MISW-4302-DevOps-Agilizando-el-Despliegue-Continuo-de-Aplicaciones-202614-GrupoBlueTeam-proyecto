@@ -12,7 +12,6 @@ from flask import Flask
 from flask_restful import Api
 from werkzeug.middleware.proxy_fix import ProxyFix
 
-
 # Application factory that builds and configures the Flask app
 def create_app(config_class=Config) -> Flask:
     """
@@ -65,9 +64,7 @@ def create_app(config_class=Config) -> Flask:
     api.add_resource(BlacklistCreateResource, "/blacklists")
 
     # Register the endpoint that queries emails in the blacklist
-    api.add_resource(
-        BlacklistQueryResource, "/blacklists/<string:email>", "/blacklists/"
-    )
+    api.add_resource(BlacklistQueryResource, "/blacklists/<string:email>", "/blacklists/")
 
     # Return the configured app
     return app
