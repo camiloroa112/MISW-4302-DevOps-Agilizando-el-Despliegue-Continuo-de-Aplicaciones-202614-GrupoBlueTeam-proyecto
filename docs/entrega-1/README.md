@@ -367,9 +367,7 @@ Muy similar a la estrategia de Rolling tradicional, solo que esta agrega un bach
 - Una vez terminado el deployment, la nueva instancia es apagada.
   
 <img width="553" height="270" alt="image" src="https://github.com/user-attachments/assets/4b05793e-7440-4aea-a33b-82de67432254" />
-
-- Tiempo de despliegue:
-  
+ 
 - Tiempo de despliegue:
 
 <img width="638" height="86" alt="image" src="https://github.com/user-attachments/assets/53f3560a-8898-48d7-bfd4-1dade60517ba" />
@@ -385,7 +383,7 @@ Con esta estrategia, el grupo de autoescalado es reemplazado por otro, inicialme
 Si es cambio es exitoso en la instancia de prueba, se inicializan nuevas instancias duplicando las actuales, cuando se completa se apaga el grupo de autoescalado y todo el trafico es redirigido al nuevo.
 
 - Se usaron 3 instancias ya que este es el limite inferior de la configuración recomendada.
-- El despliegue se validó usando el manejador de eventos de EB y la lista de despliegues de EB, el cual nos muestra la hora exacta de inicio, la estrategia de despliegue y el tiempo que tomó. Con este metodo el despliegue de 19 minutos y 53 segundos.
+- El despliegue se validó usando el manejador de eventos de EB y la lista de despliegues de EB, el cual nos muestra la hora exacta de inicio, la estrategia de despliegue y el tiempo que tomó. Con este metodo el despliegue tomó 19 minutos y 53 segundos.
 - Durante el despliegue podemos ver que se duplica el numero de instancias (La que aparece terminated es la temporal que se creó con Rolling)
   
 <img width="887" height="383" alt="image" src="https://github.com/user-attachments/assets/e611971b-9ab8-4057-96a0-d61eb0f4dab3" />
