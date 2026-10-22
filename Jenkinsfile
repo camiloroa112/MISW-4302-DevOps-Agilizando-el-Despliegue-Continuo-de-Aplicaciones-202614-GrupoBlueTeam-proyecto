@@ -2,32 +2,56 @@
 pipeline {
     agent any
 
+    options {
+        timestamps()
+        disableConcurrentBuilds()
+    }
+
+    environment {
+        UV_LINK_MODE = 'copy'
+    }
+
     stages {
         stage('Checkout') {
             steps {
-                echo 'Repositorio GitHub conectado correctamente'
+                echo 'Repositorio BlueTeam descargado desde GitHub'
+                sh 'git rev-parse --short HEAD'
             }
         }
 
-        stage('Build') {
+        stage('Setup') {
             steps {
-                echo 'Iniciando la compilacion del proyecto DevOps'
+                sh '''
+                    uv --version
+                    uv sync --frozen
+                '''
             }
         }
 
         stage('Test') {
             steps {
-                echo 'Verificando la ejecucion de la pipeline'
+                sh '''
+                    mkdir -p reports
+
+                    uv run --frozen --with pytest pytest tests/ -v \
+                        --junitxml=reports/pytest-results.xml
+                '''
             }
         }
     }
 
     post {
-        success {
-            echo 'Pipeline ejecutada exitosamente'
+        always {
+            junit allowEmptyResults: true,
+                  testResults: 'reports/pytest-results.xml'
         }
+
+        success {
+            echo 'Pipeline y pruebas completadas correctamente'
+        }
+
         failure {
-            echo 'La pipeline ha fallado'
+            echo 'La pipeline ha fallado. Revisar Console Output.'
         }
     }
 }
