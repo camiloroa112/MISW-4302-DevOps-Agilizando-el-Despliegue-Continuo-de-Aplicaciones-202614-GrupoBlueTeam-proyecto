@@ -23,7 +23,7 @@ pipeline {
             steps {
                 sh '''
                     uv --version
-                    uv sync --frozen
+                    uv sync --locked
                 '''
             }
         }
