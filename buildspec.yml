@@ -1,0 +1,78 @@
+# AWS CodeBuild build specification for the Blacklist microservice (CI only).
+#
+# Pipeline contract:
+#   install    -> provision the uv package manager and the exact locked dependencies.
+#   pre_build  -> print diagnostics so the build log is self-describing.
+#   build      -> run the unit tests; CodeBuild stops the build if pytest fails,
+#                 so the artifact is only produced when every test passes.
+#   post_build -> package the deployable Elastic Beanstalk Docker ZIP.
+#
+# Secrets (JWT_SECRET_KEY, database credentials) are NOT needed here: the unit
+# tests use an in-memory SQLite database and a fixed test secret. Never hardcode
+# AWS credentials or account values in this file; use CodeBuild environment
+# variables or AWS Secrets Manager / Parameter Store if a value is ever required.
+
+version: 0.2
+
+env:
+  variables:
+    # Pin the uv version used locally so CI and local builds match.
+    UV_VERSION: "0.9"
+    # Directory where the deployable artifact is written.
+    ARTIFACT_DIR: "dist"
+
+phases:
+  install:
+    runtime-versions:
+      python: 3.12
+    commands:
+      - echo "Installing uv ${UV_VERSION}"
+      # Install the uv package manager (standalone installer, no sudo required).
+      - curl -LsSf https://astral.sh/uv/${UV_VERSION}/install.sh | sh
+      # Make uv available on PATH for the rest of the build.
+      - export PATH="$HOME/.local/bin:$PATH"
+      # Install the exact locked dependencies, including the dev group (pytest).
+      - uv sync --frozen --dev
+
+  pre_build:
+    commands:
+      - export PATH="$HOME/.local/bin:$PATH"
+      - echo "Python version:" && uv run python --version
+      - echo "Resolved source version:" && echo "${CODEBUILD_RESOLVED_SOURCE_VERSION:-unknown}"
+      # Fail early if the lock file drifted from pyproject.toml.
+      - uv lock --locked
+
+  build:
+    commands:
+      - export PATH="$HOME/.local/bin:$PATH"
+      - echo "Running unit tests"
+      # If pytest exits non-zero, CodeBuild marks the build as FAILED and skips
+      # post_build, so no artifact is generated for a failing test suite.
+      - uv run pytest -v
+
+  post_build:
+    commands:
+      - export PATH="$HOME/.local/bin:$PATH"
+      # CODEBUILD_BUILD_SUCCEEDING is 1 while the build is still healthy.
+      - |
+        if [ "${CODEBUILD_BUILD_SUCCEEDING:-0}" != "1" ]; then
+          echo "Build is failing; skipping artifact packaging."
+          exit 1
+        fi
+      - echo "Tests passed. Packaging the deployable Elastic Beanstalk Docker artifact."
+      # Build the traceable ZIP (named with the commit SHA) into ARTIFACT_DIR.
+      - uv run python -m scripts.package_artifact --output-dir "${ARTIFACT_DIR}"
+      - echo "Artifact contents:" && ls -la "${ARTIFACT_DIR}"
+
+# Retain only the generated ZIP as the build artifact. CodePipeline stores it in
+# its S3 artifact bucket. base-directory keeps the ZIP at the root of the artifact.
+artifacts:
+  files:
+    - "*.zip"
+  base-directory: "dist"
+  name: blacklist-service-artifact
+
+# Cache uv's download cache between builds to speed up dependency installation.
+cache:
+  paths:
+    - "/root/.cache/uv/**/*"
