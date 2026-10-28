@@ -17,7 +17,7 @@ version: 0.2
 env:
   variables:
     # Pin the uv version used locally so CI and local builds match.
-    UV_VERSION: "0.9"
+    UV_VERSION: "0.9.5"
     # Directory where the deployable artifact is written.
     ARTIFACT_DIR: "dist"
 
@@ -46,9 +46,7 @@ phases:
     commands:
       - export PATH="$HOME/.local/bin:$PATH"
       - echo "Running unit tests"
-      # If pytest exits non-zero, CodeBuild marks the build as FAILED and skips
-      # post_build, so no artifact is generated for a failing test suite.
-      - uv run pytest -v
+      - uv run pytest -v --junitxml=reports/junit.xml
 
   post_build:
     commands:
@@ -64,8 +62,7 @@ phases:
       - uv run python -m scripts.package_artifact --output-dir "${ARTIFACT_DIR}"
       - echo "Artifact contents:" && ls -la "${ARTIFACT_DIR}"
 
-# Retain only the generated ZIP as the build artifact. CodePipeline stores it in
-# its S3 artifact bucket. base-directory keeps the ZIP at the root of the artifact.
+# Retain only the generated ZIP as the build artifact. CodePipeline stores it in its S3 artifact bucket. base-directory keeps the ZIP at the root of the artifact.
 artifacts:
   files:
     - "*.zip"
@@ -76,3 +73,11 @@ artifacts:
 cache:
   paths:
     - "/root/.cache/uv/**/*"
+
+# Store the pytest JUnit XML report in the CodeBuild build artifacts so that publish the pytest JUnit XML results in the CodeBuild "Reports" tab.
+reports:
+  pytest-reports:
+    files:
+      - junit.xml
+    base-directory: reports
+    file-format: JUNITXML
