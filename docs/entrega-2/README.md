@@ -272,8 +272,8 @@ Creado desde el asistente de CodePipeline (etapa Compilación → **Crear proyec
 | Dato | Valor |
 |---|---|
 | Commit | `501550b` |
-| Execution ID del pipeline | `6fd4d11d-3591-4b57-b2d3-f36423830323` |
-| Build run ID de CodeBuild | `blacklist-ci-build-blueteam:bb57f411-9868-426f-bb58-e0187db75882` |
+| Execution ID del pipeline | `bb57f411-9868-426f-bb58-e0187db75882` |
+| Build run ID de CodeBuild | `blacklist-ci-build-blueteam:6fd4d11d-3591-4b57-b2d3-f36423830323` |
 | Entorno | Python 3.12.15, uv 0.9.5, 27 paquetes desde `uv.lock` |
 | Resultado de pruebas | **23 passed** |
 | Artefacto | `blacklist-service-501550b.zip` (17 archivos) |
