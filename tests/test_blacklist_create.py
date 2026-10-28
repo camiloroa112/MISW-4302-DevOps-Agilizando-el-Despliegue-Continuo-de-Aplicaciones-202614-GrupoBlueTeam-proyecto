@@ -35,7 +35,7 @@ def test_create_returns_201(client: FlaskClient, auth_headers: dict, valid_paylo
     response = client.post("/blacklists", json = valid_payload, headers = auth_headers)
 
     # The endpoint must respond 201
-    assert response.status_code == 200
+    assert response.status_code == 201
 
     # The confirmation message must match the contract
     assert response.get_json() == {"msg": "Email added to the global blacklist"}
