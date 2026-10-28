@@ -23,25 +23,29 @@ El enunciado del curso se refiere a la rama principal como **`master`**. **En es
 
 ## Tabla de contenido
 
-- [1. Objetivo de la entrega](#1-objetivo-de-la-entrega)
-- [2. Alcance (solo CI)](#2-alcance-solo-ci)
-- [3. Arquitectura de Integración Continua](#3-arquitectura-de-integración-continua)
-- [4. Pruebas unitarias del API](#4-pruebas-unitarias-del-api)
-  - [4.1 Checklist endpoint → prueba](#41-checklist-endpoint--prueba)
-  - [4.2 Ejecución local de las pruebas](#42-ejecución-local-de-las-pruebas)
-- [5. Proceso de build y artefacto (AWS CodeBuild)](#5-proceso-de-build-y-artefacto-aws-codebuild)
-  - [5.1 buildspec.yml](#51-buildspecyml)
-  - [5.2 Empaquetado del artefacto](#52-empaquetado-del-artefacto)
-- [6. Configuración en la consola de AWS](#6-configuración-en-la-consola-de-aws)
-  - [6.1 Conexión a GitHub (AWS CodeConnections / GitHub App)](#61-conexión-a-github-aws-codeconnections--github-app)
-  - [6.2 Proyecto de CodeBuild](#62-proyecto-de-codebuild)
-  - [6.3 Pipeline de CodePipeline](#63-pipeline-de-codepipeline)
-  - [6.4 Roles y permisos mínimos](#64-roles-y-permisos-mínimos)
-- [7. Evidencia de ejecución exitosa](#7-evidencia-de-ejecución-exitosa)
-- [8. Evidencia de ejecución fallida (runbook seguro por SHA)](#8-evidencia-de-ejecución-fallida-runbook-seguro-por-sha)
-- [9. Elastic Beanstalk y Postman](#9-elastic-beanstalk-y-postman)
-- [10. Notas del entorno local](#10-notas-del-entorno-local)
-- [11. Checklist de lo que falta (acciones manuales)](#11-checklist-de-lo-que-falta-acciones-manuales)
+- [Proyecto 1 · Entrega 2 — Integración Continua (CI)](#proyecto-1--entrega-2--integración-continua-ci)
+  - [0. Nota de cumplimiento: `master` (enunciado) vs `main` (repositorio)](#0-nota-de-cumplimiento-master-enunciado-vs-main-repositorio)
+  - [Tabla de contenido](#tabla-de-contenido)
+  - [1. Objetivo de la entrega](#1-objetivo-de-la-entrega)
+  - [2. Alcance (solo CI)](#2-alcance-solo-ci)
+    - [2.1 Relación con el workflow de GitHub Actions existente](#21-relación-con-el-workflow-de-github-actions-existente)
+  - [3. Arquitectura de Integración Continua](#3-arquitectura-de-integración-continua)
+  - [4. Pruebas unitarias del API](#4-pruebas-unitarias-del-api)
+    - [4.1 Checklist endpoint → prueba](#41-checklist-endpoint--prueba)
+    - [4.2 Ejecución local de las pruebas](#42-ejecución-local-de-las-pruebas)
+  - [5. Proceso de build y artefacto (AWS CodeBuild)](#5-proceso-de-build-y-artefacto-aws-codebuild)
+    - [5.1 buildspec.yml](#51-buildspecyml)
+    - [5.2 Empaquetado del artefacto](#52-empaquetado-del-artefacto)
+  - [6. Configuración en la consola de AWS](#6-configuración-en-la-consola-de-aws)
+    - [6.1 Conexión a GitHub (AWS CodeConnections / GitHub App)](#61-conexión-a-github-aws-codeconnections--github-app)
+    - [6.2 Proyecto de CodeBuild](#62-proyecto-de-codebuild)
+    - [6.3 Pipeline de CodePipeline](#63-pipeline-de-codepipeline)
+    - [6.4 Roles y permisos mínimos](#64-roles-y-permisos-mínimos)
+  - [7. Evidencia de ejecución exitosa](#7-evidencia-de-ejecución-exitosa)
+  - [8. Evidencia de ejecución fallida](#8-evidencia-de-ejecución-fallida)
+  - [9. Elastic Beanstalk y Postman](#9-elastic-beanstalk-y-postman)
+  - [10. Notas del entorno local](#10-notas-del-entorno-local)
+  - [11. Checklist de lo que falta (acciones manuales)](#11-checklist-de-lo-que-falta-acciones-manuales)
 
 ---
 
@@ -264,7 +268,8 @@ El artefacto `BuildOutput` (el ZIP) queda almacenado en el bucket S3 de la canal
 
 `EVIDENCIA AWS PENDIENTE` — capturar cuando haya acceso a AWS:
 
-- [ ] Captura del pipeline `blacklist-ci-pipeline` con Source y Build en **Succeeded**, mostrando el **Execution ID**.
+- [x] Captura del pipeline `blacklist-ci-pipeline` con Source y Build en **Succeeded**, mostrando el **Execution ID**.
+
 - [ ] Captura del detalle del build en CodeBuild con el **Build run ID** y la fase `build` (pytest, 23 passed) en verde.
 - [ ] Captura del log de CloudWatch del build mostrando `23 passed` y `Artifact created: ... .zip`.
 - [ ] Captura del objeto ZIP en el bucket S3 de artefactos de CodePipeline (ruta/clave del objeto).
@@ -277,60 +282,62 @@ El artefacto `BuildOutput` (el ZIP) queda almacenado en el bucket S3 de la canal
 | Clave del artefacto en S3 | `EVIDENCIA AWS PENDIENTE` |
 | Hallazgos | `EVIDENCIA AWS PENDIENTE` |
 
-## 8. Evidencia de ejecución fallida (runbook seguro por SHA)
+## 8. Evidencia de ejecución fallida
 
-**Objetivo:** demostrar que, cuando las pruebas fallan, el pipeline **falla visiblemente en CodePipeline** (Source → Build → Failed) y **no se genera artefacto**, **sin modificar `main`** y de forma totalmente reversible.
+**Objetivo:** demostrar que, cuando una prueba falla, el pipeline **falla visiblemente en CodePipeline** y **no se genera artefacto**.
 
-> ⚠️ Requiere **autorización explícita** antes de ejecutarse. **No se introduce ninguna falla en `main`.** El trigger automático del pipeline permanece configurado en `main`.
->
-> **Principio:** una ejecución aislada de CodeBuild **no** cuenta como ejecución fallida del pipeline.
+**Método:** se integró a `main` un cambio con dos pruebas que fallan a propósito, sin tocar el código de la aplicación:
 
-### Método principal — Source revision override por SHA sobre el MISMO pipeline
+- En `tests/test_blacklist_create.py`, `test_create_returns_201` se cambió para esperar un `200` en lugar del `201` que retorna el endpoint.
+- Se agregó `tests/test_ci_failure_demo.py` con una aserción que siempre falla (`assert False, "Controlled CI failure demo"`).
 
-1. Crear una rama efímera desde `main` con una prueba que falla a propósito (no se toca el código de la app):
-   ```bash
-   git switch -c ci/failure-demo main
-   ```
-   Añadir `tests/test_ci_failure_demo.py`:
-   ```python
-   # Intentional, reversible failure used only to demonstrate a failing pipeline run.
-   def test_intentional_failure_demo() -> None:
-       assert False, "Controlled CI failure demo"
-   ```
-2. Publicar **solo** esa rama efímera (previa autorización) y anotar el **SHA del commit de fallo** = `COMMIT_ID`:
-   ```bash
-   git push -u origin ci/failure-demo
-   git rev-parse HEAD   # -> COMMIT_ID
-   ```
-3. En CodePipeline, **Start pipeline execution → Source revision overrides**, especificando la **revisión por commit ID = `COMMIT_ID`** para la acción Source. La **configuración de la acción Source permanece en `main`** y el trigger automático sigue activo; solo esta ejecución manual usa el commit de fallo.
-4. El pipeline corre Source → Build con ese commit; `pytest` falla → **Build FAILED** → **no hay artefacto**. Capturar la evidencia.
-5. **Limpieza:** eliminar la rama efímera (local y remota). `main` nunca se tocó:
-   ```bash
-   git push origin --delete ci/failure-demo
-   git branch -D ci/failure-demo
-   ```
-
-**Validación previa obligatoria:** confirmar en la consola que la conexión **GitHub App (CodeConnections)** admite un **source revision override por commit ID** que no pertenece a la rama configurada (`main`) en CodePipeline V2.
-
-### Fallback — Pipeline espejo de demostración
-
-Si el override por SHA no resuelve un commit fuera de `main` con esa conexión: crear un **pipeline temporal** `blacklist-ci-pipeline-demo`, idéntico, cuya acción Source apunte a `ci/failure-demo`, con el mismo `buildspec`/CodeBuild.
-
-- **Limitaciones a declarar:** (a) el fallo queda en un pipeline distinto del principal, por lo que se documenta explícitamente que es un espejo creado solo para la demostración, con configuración idéntica; (b) se elimina al terminar junto con la rama.
-
-`EVIDENCIA AWS PENDIENTE` — capturar cuando haya acceso y autorización:
-
-- [ ] Captura del pipeline con la etapa Build en **Failed** y el **Execution ID** (indicar si fue override por SHA sobre el principal o pipeline espejo).
-- [ ] Captura del log de CloudWatch mostrando el fallo de `pytest` (`1 failed`).
-- [ ] Confirmación de que **no** se generó/retuvo artefacto para esa ejecución.
+Al llegar el commit a `main`, el desencadenador (Push → `main`) inició el pipeline automáticamente. Después, ambos cambios se revirtieron con un nuevo commit en `main`, que volvió a ejecutar el pipeline en verde.
 
 | Dato | Valor |
 |---|---|
-| Execution ID del pipeline (fallo) | `EVIDENCIA AWS PENDIENTE` |
-| Build run ID de CodeBuild (fallo) | `EVIDENCIA AWS PENDIENTE` |
-| Método usado (override por SHA / espejo) | `EVIDENCIA AWS PENDIENTE` |
-| Resultado de pruebas | `EVIDENCIA AWS PENDIENTE` (esperado: 1 failed) |
-| Hallazgos | `EVIDENCIA AWS PENDIENTE` |
+| Commit con las pruebas fallidas | `192035d` |
+| Execution ID del pipeline | `1f3c78b8-6dfb-4bdc-8567-fea3095b9382` |
+| Build run ID de CodeBuild | `bc179c36-8b6e-46fc-a89c-04063bfb2170` |
+| Resultado de pruebas | **2 failed, 22 passed** (24 pruebas) |
+| Commit de corrección | `192035d` (pipeline de nuevo en verde) |
+
+| Fase | Resultado |
+|---|---|
+| INSTALL / PRE_BUILD | Correcto |
+| BUILD | **Fallido**: `test_create_returns_201` (`assert 201 == 200`) y `test_intentional_failure_demo` (`Controlled CI failure demo`) |
+| POST_BUILD | **Fallido a propósito**: "Build is failing; skipping artifact packaging." |
+| UPLOAD_ARTIFACTS | **Fallido**: `no matching base directory path found for dist`, porque el artefacto nunca se generó |
+
+**Hallazgos:**
+
+- El pipeline se disparó solo con el commit en `main`, igual que en la ejecución exitosa: la validación no depende de que alguien la lance a mano.
+- El log identifica exactamente qué pruebas fallaron y por qué, con el valor obtenido frente al esperado (`assert 201 == 200`).
+- La fase `post_build` se ejecutó, pero su verificación de `CODEBUILD_BUILD_SUCCEEDING` detuvo el empaquetado. Como `dist/` nunca se creó, la carga de artefactos también falló: **una versión con pruebas rotas nunca queda disponible para desplegarse**.
+- La pestaña **Informes** de CodeBuild muestra las 2 pruebas fallidas junto a las 22 aprobadas, sin necesidad de leer el log completo.
+- Al revertir los cambios, el pipeline volvió a pasar, lo que confirma la corrección.
+
+#### Captura: pipeline con Build en rojo, con el Execution ID
+<img width="749" height="306" alt="Captura desde 2026-10-27 22-49-04" src="https://github.com/user-attachments/assets/200f781c-5a59-4824-953e-5c70f9613da0" />
+
+#### Captura: log con el bloque FAILURES
+<img width="1714" height="842" alt="Captura desde 2026-10-27 22-56-00" src="https://github.com/user-attachments/assets/7c8310a8-bf4b-41ba-99b8-6445a3e9540e" />
+
+#### Captura: log con "2 failed, 22 passed"
+<img width="1714" height="770" alt="Captura desde 2026-10-27 22-57-09" src="https://github.com/user-attachments/assets/16584df2-c664-4895-afe5-6455c5f09de4" />
+
+#### Captura: post_build con "Build is failing; skipping artifact packaging." y UPLOAD_ARTIFACTS fallido -->
+<img width="1714" height="536" alt="image" src="https://github.com/user-attachments/assets/4ee4841c-1245-4fd7-acf5-de2ace053502" />
+
+#### Captura: pestaña Informes con las 2 pruebas fallidas
+<img width="1468" height="586" alt="image" src="https://github.com/user-attachments/assets/da2e38ea-c575-4279-aa88-128ddcbbbd29" />
+
+#### Captura: S3 sin artefacto nuevo para esta ejecución
+<img width="1793" height="366" alt="image" src="https://github.com/user-attachments/assets/2936ec57-494a-454e-91af-b2c0d6033a6d" />
+
+<img width="1793" height="432" alt="image" src="https://github.com/user-attachments/assets/79c8aec3-0888-4f35-9671-6bfd828ce061" />
+
+#### Captura: pipeline de nuevo en verde tras la corrección
+
 
 ## 9. Elastic Beanstalk y Postman
 
