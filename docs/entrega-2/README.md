@@ -268,7 +268,8 @@ El artefacto `BuildOutput` (el ZIP) queda almacenado en el bucket S3 de la canal
 
 `EVIDENCIA AWS PENDIENTE` — capturar cuando haya acceso a AWS:
 
-- [ ] Captura del pipeline `blacklist-ci-pipeline` con Source y Build en **Succeeded**, mostrando el **Execution ID**.
+- [x] Captura del pipeline `blacklist-ci-pipeline` con Source y Build en **Succeeded**, mostrando el **Execution ID**.
+
 - [ ] Captura del detalle del build en CodeBuild con el **Build run ID** y la fase `build` (pytest, 23 passed) en verde.
 - [ ] Captura del log de CloudWatch del build mostrando `23 passed` y `Artifact created: ... .zip`.
 - [ ] Captura del objeto ZIP en el bucket S3 de artefactos de CodePipeline (ruta/clave del objeto).
@@ -315,13 +316,28 @@ Al llegar el commit a `main`, el desencadenador (Push → `main`) inició el pip
 - La pestaña **Informes** de CodeBuild muestra las 2 pruebas fallidas junto a las 22 aprobadas, sin necesidad de leer el log completo.
 - Al revertir los cambios, el pipeline volvió a pasar, lo que confirma la corrección.
 
-<!-- Captura: pipeline con Build en rojo, con el Execution ID -->
-<!-- Captura: log con el bloque FAILURES -->
-<!-- Captura: log con "2 failed, 22 passed" -->
-<!-- Captura: post_build con "Build is failing; skipping artifact packaging." y UPLOAD_ARTIFACTS fallido -->
-<!-- Captura: pestaña Informes con las 2 pruebas fallidas -->
-<!-- Captura: S3 sin artefacto nuevo para esta ejecución -->
-<!-- Captura: pipeline de nuevo en verde tras la corrección -->
+#### Captura: pipeline con Build en rojo, con el Execution ID
+<img width="749" height="306" alt="Captura desde 2026-10-27 22-49-04" src="https://github.com/user-attachments/assets/200f781c-5a59-4824-953e-5c70f9613da0" />
+
+#### Captura: log con el bloque FAILURES
+<img width="1714" height="842" alt="Captura desde 2026-10-27 22-56-00" src="https://github.com/user-attachments/assets/7c8310a8-bf4b-41ba-99b8-6445a3e9540e" />
+
+#### Captura: log con "2 failed, 22 passed"
+<img width="1714" height="770" alt="Captura desde 2026-10-27 22-57-09" src="https://github.com/user-attachments/assets/16584df2-c664-4895-afe5-6455c5f09de4" />
+
+#### Captura: post_build con "Build is failing; skipping artifact packaging." y UPLOAD_ARTIFACTS fallido -->
+<img width="1714" height="536" alt="image" src="https://github.com/user-attachments/assets/4ee4841c-1245-4fd7-acf5-de2ace053502" />
+
+#### Captura: pestaña Informes con las 2 pruebas fallidas
+<img width="1468" height="586" alt="image" src="https://github.com/user-attachments/assets/da2e38ea-c575-4279-aa88-128ddcbbbd29" />
+
+#### Captura: S3 sin artefacto nuevo para esta ejecución
+<img width="1793" height="366" alt="image" src="https://github.com/user-attachments/assets/2936ec57-494a-454e-91af-b2c0d6033a6d" />
+
+<img width="1793" height="432" alt="image" src="https://github.com/user-attachments/assets/79c8aec3-0888-4f35-9671-6bfd828ce061" />
+
+#### Captura: pipeline de nuevo en verde tras la corrección
+
 
 ## 9. Elastic Beanstalk y Postman
 
