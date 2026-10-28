@@ -277,7 +277,7 @@ Creado desde el asistente de CodePipeline (etapa Compilación → **Crear proyec
 | Entorno | Python 3.12.15, uv 0.9.5, 27 paquetes desde `uv.lock` |
 | Resultado de pruebas | **23 passed** |
 | Artefacto | `blacklist-service-501550b.zip` (17 archivos) |
-| Clave del artefacto en S3 | `blacklist-ci-pipelin/BuildArtif/mpBdAIT` |
+| Clave del artefacto en S3 | `blacklist-ci-pipelin/BuildArtif/7QihuUJ` |
 
 **Hallazgos:**
 
