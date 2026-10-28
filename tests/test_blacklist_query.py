@@ -47,6 +47,7 @@ def test_query_blacklisted_email_returns_200(client: FlaskClient, auth_headers: 
     # Assert that the response status code is 200 and the JSON response matches the expected output
     assert response.status_code == 200
     
+    # Assert that the JSON response indicates that the email is blacklisted and includes the blocked reason
     assert response.get_json() == {"email": "blocked@example.com", "is_blacklisted": True, "blocked_reason": "Compliance request",}
 
 # A non-blacklisted email returns 200 with false
