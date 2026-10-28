@@ -299,7 +299,7 @@ Creado desde el asistente de CodePipeline (etapa Compilación → **Crear proyec
 
 #### Detalle del build en CodeBuild con el Build run ID y la fase `build` en verde
 
-<img width="1042" height="620" alt="Detalle del build en CodeBuild" src="https://github.com/user-attachments/assets/c9cd3f5a-8988-40e8-8113-870192142074" />
+<img width="2521" height="1192" alt="Detalle del build en CodeBuild" src="https://github.com/user-attachments/assets/a08e6921-2e58-48c8-bc8a-8a64c379150c" />
 
 #### Pestaña Informes con las pruebas aprobadas
 
@@ -374,7 +374,7 @@ Al llegar el commit a `main` (merge del PR #18), el desencadenador (Push → `ma
 
 <img width="1793" height="366" alt="SourceArti con el objeto de la ejecución fallida" src="https://github.com/user-attachments/assets/2936ec57-494a-454e-91af-b2c0d6033a6d" />
 
-<img width="1793" height="432" alt="BuildArtif sin artefacto de la ejecución fallida" src="https://github.com/user-attachments/assets/79c8aec3-0888-4f35-9671-6bfd828ce061" />
+<img width="2161" height="637" alt="BuildArtif sin artefacto de la ejecución fallida" src="https://github.com/user-attachments/assets/9a0e8892-aeb8-4a69-be82-23fdca8d50d8" />
 
 #### Log de CloudWatch de la ejecución fallida
 
