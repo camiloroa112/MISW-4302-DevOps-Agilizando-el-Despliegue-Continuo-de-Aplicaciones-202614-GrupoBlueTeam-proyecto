@@ -266,21 +266,44 @@ El artefacto `BuildOutput` (el ZIP) queda almacenado en el bucket S3 de la canal
 
 **Objetivo:** un push a `main` dispara el pipeline; Source y Build terminan en **Succeeded** y el ZIP queda en S3.
 
-`EVIDENCIA AWS PENDIENTE` — capturar cuando haya acceso a AWS:
+### Evidencias:
 
-- [x] Captura del pipeline `blacklist-ci-pipeline` con Source y Build en **Succeeded**, mostrando el **Execution ID**.
+#### Captura del pipeline `blacklist-ci-pipeline` con Source y Build en **Succeeded**, mostrando el **Execution ID**.
+<img width="877" height="508" alt="image" src="https://github.com/user-attachments/assets/5dc2fd56-9cce-4afa-a709-a91a345d3e70" />
 
-- [ ] Captura del detalle del build en CodeBuild con el **Build run ID** y la fase `build` (pytest, 23 passed) en verde.
-- [ ] Captura del log de CloudWatch del build mostrando `23 passed` y `Artifact created: ... .zip`.
-- [ ] Captura del objeto ZIP en el bucket S3 de artefactos de CodePipeline (ruta/clave del objeto).
+#### Captura del detalle del build en CodeBuild con el **Build run ID** y la fase `build` (pytest, 23 passed) en verde.
+<img width="1042" height="620" alt="image" src="https://github.com/user-attachments/assets/c9cd3f5a-8988-40e8-8113-870192142074" />
+
+#### Captura: pestaña Informes con las pruebas exitosas
+<img width="1766" height="862" alt="image" src="https://github.com/user-attachments/assets/5ab49fd3-535b-4ecb-ae23-34d0956dd50a" />
+
+#### Captura del log de CloudWatch del build mostrando `23 passed` y `Artifact created: ... .zip`.
+
+<img width="2270" height="1168" alt="image" src="https://github.com/user-attachments/assets/79e9d5e8-bbd8-4b1a-b8bb-d618be4d15bb" />
+
+<img width="2270" height="774" alt="image" src="https://github.com/user-attachments/assets/3fdaa616-f5b4-481b-a090-2f0da16386ac" />
+
+#### Captura del objeto ZIP en el bucket S3 de artefactos de CodePipeline (ruta/clave del objeto).
 
 | Dato | Valor |
 |---|---|
-| Execution ID del pipeline | `EVIDENCIA AWS PENDIENTE` |
-| Build run ID de CodeBuild | `EVIDENCIA AWS PENDIENTE` |
-| Resultado de pruebas | `EVIDENCIA AWS PENDIENTE` (esperado: 23 passed) |
-| Clave del artefacto en S3 | `EVIDENCIA AWS PENDIENTE` |
-| Hallazgos | `EVIDENCIA AWS PENDIENTE` |
+| Commit con las pruebas exitosas | `501550b` |
+| Execution ID del pipeline | `6fd4d11d-3591-4b57-b2d3-f36423830323` |
+| Build run ID de CodeBuild | `bb57f411-9868-426f-bb58-e0187db75882` |
+| Resultado de pruebas | **23 passed** (Esperado) |
+| Clave del artefacto en S3 | `[EVIDENCIA AWS](https://codepipeline-us-east-1-354c20e6e4e8-4938-ac70-625ebed8de2e.s3.us-east-1.amazonaws.com/blacklist-ci-pipelin/BuildArtif/mpBdAIT)` |
+
+**Hallazgos:**
+
+- **Disparo automático:** el pipeline se ejecutó solo con el merge del PR #16 a `main`, sin intervención manual. Esto confirma que el desencadenador (Push → `main`) funciona.
+- **Configuración versionada:** CodeBuild leyó el `buildspec.yml` desde la raíz del repositorio (`YAML location is .../src/buildspec.yml`). El proceso de build vive junto al código y cualquier cambio queda versionado y revisado.
+- **Build reproducible:** las 27 dependencias se instalaron desde `uv.lock` con `uv sync --frozen`, las mismas versiones que en desarrollo local, y `uv lock --locked` verificó que el lock coincide con `pyproject.toml` antes de ejecutar las pruebas.
+- **Pruebas sin infraestructura externa:** las 23 pruebas pasaron en 0,32 s usando SQLite en memoria, sin base de datos real ni secretos en el pipeline.
+- **Trazabilidad del artefacto:** el ZIP se nombró con el SHA del commit (`blacklist-service-9673108.zip`), tomado de `CODEBUILD_RESOLVED_SOURCE_VERSION`. Así se sabe exactamente qué versión del código contiene cada artefacto.
+- **Artefacto mínimo:** el ZIP contiene solo los 17 archivos necesarios para ejecutar la aplicación en Elastic Beanstalk, sin pruebas, scripts, documentación ni archivos `.env`.
+- **Resultados visibles en AWS:** el reporte JUnit se publicó en la pestaña Informes de CodeBuild, con el detalle de cada prueba.
+- **Duración:** el build completo tomó unos 14 segundos. La mayor parte se fue en instalar uv y las dependencias (~5 s); las pruebas, el empaquetado y la carga del artefacto tomaron menos de un segundo cada una.
+- **Oportunidad de mejora:** uv mostró un aviso de rendimiento (`Failed to hardlink files`) porque la caché y el entorno virtual están en sistemas de archivos distintos. No afecta el resultado; se puede silenciar con `UV_LINK_MODE=copy` y, si se activa la caché del proyecto de CodeBuild, las siguientes ejecuciones instalarían las dependencias más rápido.
 
 ## 8. Evidencia de ejecución fallida
 
@@ -299,7 +322,8 @@ Al llegar el commit a `main`, el desencadenador (Push → `main`) inició el pip
 | Execution ID del pipeline | `1f3c78b8-6dfb-4bdc-8567-fea3095b9382` |
 | Build run ID de CodeBuild | `bc179c36-8b6e-46fc-a89c-04063bfb2170` |
 | Resultado de pruebas | **2 failed, 22 passed** (24 pruebas) |
-| Commit de corrección | `192035d` (pipeline de nuevo en verde) |
+| Clave del artefacto en S3 | No se genera al fallar las pruebas |
+| Commit de corrección | `501550b` (pipeline de nuevo en verde) |
 
 | Fase | Resultado |
 |---|---|
@@ -315,6 +339,8 @@ Al llegar el commit a `main`, el desencadenador (Push → `main`) inició el pip
 - La fase `post_build` se ejecutó, pero su verificación de `CODEBUILD_BUILD_SUCCEEDING` detuvo el empaquetado. Como `dist/` nunca se creó, la carga de artefactos también falló: **una versión con pruebas rotas nunca queda disponible para desplegarse**.
 - La pestaña **Informes** de CodeBuild muestra las 2 pruebas fallidas junto a las 22 aprobadas, sin necesidad de leer el log completo.
 - Al revertir los cambios, el pipeline volvió a pasar, lo que confirma la corrección.
+
+### Evidencias:
 
 #### Captura: pipeline con Build en rojo, con el Execution ID
 <img width="749" height="306" alt="Captura desde 2026-10-27 22-49-04" src="https://github.com/user-attachments/assets/200f781c-5a59-4824-953e-5c70f9613da0" />
@@ -336,8 +362,13 @@ Al llegar el commit a `main`, el desencadenador (Push → `main`) inició el pip
 
 <img width="1793" height="432" alt="image" src="https://github.com/user-attachments/assets/79c8aec3-0888-4f35-9671-6bfd828ce061" />
 
-#### Captura: pipeline de nuevo en verde tras la corrección
+#### Captura del log de CloudWatch del build mostrando `2 failed, 22 passed` y `Artifact created: ... .zip`.
+<img width="2312" height="1200" alt="image" src="https://github.com/user-attachments/assets/3f04022e-7b7f-42eb-960c-dbee9c2a222b" />
 
+<img width="2312" height="1200" alt="image" src="https://github.com/user-attachments/assets/e681a8d1-3799-4076-8a94-82a41ef6b334" />
+
+#### Captura: pipeline de nuevo en verde tras la corrección
+<img width="700" height="445" alt="image" src="https://github.com/user-attachments/assets/57354d9c-b68e-4ca2-8bf2-4d357e996eb2" />
 
 ## 9. Elastic Beanstalk y Postman
 
@@ -357,14 +388,14 @@ La aplicación de la entrega 1 debe seguir ejecutándose en Elastic Beanstalk y 
 
 ## 11. Checklist de lo que falta (acciones manuales)
 
-- [ ] Integrar la entrega 2 por el flujo del equipo: `feature/release_2 → develop → main`.
-- [ ] Validar con el evaluador la [Nota de cumplimiento sobre `master`](#0-nota-de-cumplimiento-sobre-la-rama-master).
-- [ ] Definir la **región** de AWS al abrir AWS Academy.
-- [ ] Crear la conexión de CodeConnections a GitHub (sección 6.1).
-- [ ] Crear el proyecto de CodeBuild `blacklist-ci-build` (sección 6.2).
-- [ ] Crear el pipeline `blacklist-ci-pipeline` con disparador en `main` (sección 6.3).
-- [ ] Ejecutar y capturar la **corrida exitosa** (sección 7).
-- [ ] Con autorización, ejecutar el **runbook de fallo por SHA** y capturar la **corrida fallida** (sección 8).
+- [x] Integrar la entrega 2 por el flujo del equipo: `feature/release_2 → develop → main`.
+- [x] `main` cumple el rol de la rama `master` del enunciado  [Nota de cumplimiento sobre `master`](#0-nota-de-cumplimiento-sobre-la-rama-master).
+- [x] Definir la **región** de AWS al abrir AWS Academy/Console AWS.
+- [x] Crear la conexión de CodeConnections a GitHub (sección 6.1).
+- [x] Crear el proyecto de CodeBuild `blacklist-ci-build` (sección 6.2).
+- [x] Crear el pipeline `blacklist-ci-pipeline` con disparador en `main` (sección 6.3).
+- [x] Ejecutar y capturar la **corrida exitosa** (sección 7).
+- [x] Con autorización, ejecutar el **runbook de fallo por SHA** y capturar la **corrida fallida** (sección 8).
 - [ ] Verificar Elastic Beanstalk + Postman (sección 9, para el video).
 - [ ] Insertar capturas reales en [`documento-pdf.md`](documento-pdf.md) y exportar el **PDF**.
 - [ ] Grabar el **video** de sustentación siguiendo el [guion](guion-video.md).
