@@ -297,7 +297,7 @@ Creado desde el asistente de CodePipeline (etapa Compilación → **Crear proyec
 
 <img width="877" height="508" alt="Pipeline con Source y Build en verde" src="https://github.com/user-attachments/assets/5dc2fd56-9cce-4afa-a709-a91a345d3e70" />
 
-#### Detalle del build en CodeBuild con el Build run ID y la fase `build` en verde
+#### Detalle del build en CodeBuild: iniciado por el pipeline, commit `501550b` y todas las fases en Correcto
 
 <img width="2521" height="1192" alt="Detalle del build en CodeBuild" src="https://github.com/user-attachments/assets/a08e6921-2e58-48c8-bc8a-8a64c379150c" />
 
@@ -305,7 +305,7 @@ Creado desde el asistente de CodePipeline (etapa Compilación → **Crear proyec
 
 <img width="1766" height="862" alt="Informe de pruebas en CodeBuild" src="https://github.com/user-attachments/assets/5ab49fd3-535b-4ecb-ae23-34d0956dd50a" />
 
-#### Log de CloudWatch con `23 passed` y `Artifact created`
+#### Log del build con las 23 pruebas aprobadas
 
 <img width="2270" height="1168" alt="Log con 23 passed" src="https://github.com/user-attachments/assets/79e9d5e8-bbd8-4b1a-b8bb-d618be4d15bb" />
 
