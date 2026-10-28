@@ -1,4 +1,4 @@
-# Proyecto 1 · Entrega 2 — Integración Continua (CI)
+# Proyecto 1 · Entrega 2 - Integración Continua (CI)
 
 **Microservicio de lista negra de emails · Grupo Blue Team**
 Curso MISW-4302 DevOps: Agilizando el Despliegue Continuo de Aplicaciones · Universidad de los Andes
@@ -23,7 +23,7 @@ El enunciado del curso se refiere a la rama principal como **`master`**. **En es
 
 ## Tabla de contenido
 
-- [Proyecto 1 · Entrega 2 — Integración Continua (CI)](#proyecto-1--entrega-2--integración-continua-ci)
+- [Proyecto 1 · Entrega 2 - Integración Continua (CI)](#proyecto-1--entrega-2--integración-continua-ci)
   - [0. Nota de cumplimiento: `master` (enunciado) vs `main` (repositorio)](#0-nota-de-cumplimiento-master-enunciado-vs-main-repositorio)
   - [Tabla de contenido](#tabla-de-contenido)
   - [1. Objetivo de la entrega](#1-objetivo-de-la-entrega)
@@ -120,7 +120,7 @@ flowchart LR
 
 | Endpoint | Método | Autenticación | Casos de éxito | Casos de error | Archivo de prueba |
 |---|---|---|---|---|---|
-| `/health` | GET | No requiere | `200 {"status":"ok"}` | — | `tests/test_health.py` |
+| `/health` | GET | No requiere | `200 {"status":"ok"}` | - | `tests/test_health.py` |
 | `/blacklists` | POST | Bearer JWT | `201` creado · persistencia de campos del servidor · sin `blocked_reason` · IP tomada de `X-Forwarded-For` | `409` duplicado · `400` campo faltante (`email`, `app_uuid`) · `400` formato inválido (`email`, `app_uuid`) · `400` `blocked_reason` > 255 · `400` campo desconocido · `400` body no-JSON · `401` token ausente/inválido | `tests/test_blacklist_create.py` |
 | `/blacklists/<email>` | GET | Bearer JWT | `200` bloqueado (con motivo) · `200` no bloqueado · normalización de mayúsculas | `400` email vacío · `400` formato inválido · `401` token ausente/inválido | `tests/test_blacklist_query.py` |
 
@@ -374,7 +374,7 @@ Al llegar el commit a `main`, el desencadenador (Push → `main`) inició el pip
 
 La aplicación de la entrega 1 debe seguir ejecutándose en Elastic Beanstalk y ser accesible por Postman. Las colecciones están en [`postman/`](../../postman/). **Esta evidencia se muestra principalmente en el video de sustentación**, no en el PDF conciso.
 
-`EVIDENCIA AWS PENDIENTE` — verificar cuando haya acceso:
+`EVIDENCIA AWS PENDIENTE` - verificar cuando haya acceso:
 
 - [ ] Estado del entorno de Elastic Beanstalk (Health **OK**) y su URL.
 - [ ] Ejecución de la colección de Postman contra esa URL (POST y GET) con respuestas correctas.
