@@ -1,4 +1,4 @@
-# Proyecto 1 · Entrega 2 — Integración Continua (CI)
+# Proyecto 1 · Entrega 2 - Integración Continua (CI)
 
 **Microservicio de lista negra de emails · Grupo Blue Team**
 Curso MISW-4302 DevOps: Agilizando el Despliegue Continuo de Aplicaciones · Universidad de los Andes
@@ -9,7 +9,7 @@ Documentación de la entrega: arquitectura, configuración en la consola de AWS 
 
 ## Tabla de contenido
 
-- [Proyecto 1 · Entrega 2 — Integración Continua (CI)](#proyecto-1--entrega-2--integración-continua-ci)
+- [Proyecto 1 · Entrega 2 - Integración Continua (CI)](#proyecto-1--entrega-2--integración-continua-ci)
   - [Tabla de contenido](#tabla-de-contenido)
   - [0. Rama principal: `main` en lugar de `master`](#0-rama-principal-main-en-lugar-de-master)
   - [1. Objetivo de la entrega](#1-objetivo-de-la-entrega)
@@ -120,7 +120,7 @@ flowchart LR
 
 | Endpoint | Método | Autenticación | Casos de éxito | Casos de error | Archivo de prueba |
 |---|---|---|---|---|---|
-| `/health` | GET | No requiere | `200 {"status":"ok"}` | — | `tests/test_health.py` |
+| `/health` | GET | No requiere | `200 {"status":"ok"}` | - | `tests/test_health.py` |
 | `/blacklists` | POST | Bearer JWT | `201` creado · persistencia de campos del servidor · sin `blocked_reason` · IP tomada de `X-Forwarded-For` | `409` duplicado · `400` campo faltante (`email`, `app_uuid`) · `400` formato inválido (`email`, `app_uuid`) · `400` `blocked_reason` > 255 · `400` campo desconocido · `400` body no-JSON · `401` token ausente/inválido | `tests/test_blacklist_create.py` |
 | `/blacklists/<email>` | GET | Bearer JWT | `200` bloqueado (con motivo) · `200` no bloqueado · normalización de mayúsculas | `400` email vacío · `400` formato inválido · `401` token ausente/inválido | `tests/test_blacklist_query.py` |
 
@@ -239,8 +239,8 @@ app/schemas.py
 | Compilación | Proveedor | AWS CodeBuild → proyecto `blacklist-ci-build-blueteam` (sección 6.3) |
 | Compilación | Artefacto de entrada / salida | `SourceArtifact` / `BuildArtifact` |
 | Compilación | Reintento automático | Desactivado |
-| Prueba | — | Omitida |
-| Implementación | — | **Omitida** (solo CI) |
+| Prueba | - | Omitida |
+| Implementación | - | **Omitida** (solo CI) |
 
 En los pipelines V2, cuando se define un desencadenador con filtros, la acción Source queda con `DetectChanges: false`: es el **desencadenador** (Push → `main`) el que inicia el pipeline con cada commit en `main`.
 
