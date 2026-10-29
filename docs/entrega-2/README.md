@@ -9,7 +9,7 @@ Documentación de la entrega: arquitectura, configuración en la consola de AWS 
 
 ## Tabla de contenido
 
-- [Proyecto 1 · Entrega 2 - Integración Continua (CI)](#proyecto-1--entrega-2--integración-continua-ci)
+- [Proyecto 1 · Entrega 2 - Integración Continua (CI)](#proyecto-1--entrega-2---integración-continua-ci)
   - [Tabla de contenido](#tabla-de-contenido)
   - [0. Rama principal: `main` en lugar de `master`](#0-rama-principal-main-en-lugar-de-master)
   - [1. Objetivo de la entrega](#1-objetivo-de-la-entrega)
@@ -24,15 +24,20 @@ Documentación de la entrega: arquitectura, configuración en la consola de AWS 
     - [5.2 Empaquetado del artefacto](#52-empaquetado-del-artefacto)
   - [6. Configuración en la consola de AWS](#6-configuración-en-la-consola-de-aws)
     - [6.1 Conexión a GitHub (AWS CodeConnections / GitHub App)](#61-conexión-a-github-aws-codeconnections--github-app)
+      - [Conexión con GitHub en estado Disponible](#conexión-con-github-en-estado-disponible)
     - [6.2 Pipeline de CodePipeline](#62-pipeline-de-codepipeline)
+      - [Desencadenador del pipeline: Push en la rama `main`](#desencadenador-del-pipeline-push-en-la-rama-main)
+      - [Etapas del pipeline: Source (GitHub) y Build (CodeBuild), sin etapa de despliegue](#etapas-del-pipeline-source-github-y-build-codebuild-sin-etapa-de-despliegue)
     - [6.3 Proyecto de CodeBuild](#63-proyecto-de-codebuild)
+      - [Configuración del proyecto: origen CodePipeline, imagen Amazon Linux y uso de `buildspec.yml`](#configuración-del-proyecto-origen-codepipeline-imagen-amazon-linux-y-uso-de-buildspecyml)
+      - [Artefactos y registros del proyecto](#artefactos-y-registros-del-proyecto)
     - [6.4 Roles y permisos](#64-roles-y-permisos)
   - [7. Evidencia de ejecución exitosa](#7-evidencia-de-ejecución-exitosa)
     - [Evidencias](#evidencias)
       - [Pipeline `blacklist-ci-pipeline` con Source y Build en Correcto, con el Execution ID](#pipeline-blacklist-ci-pipeline-con-source-y-build-en-correcto-con-el-execution-id)
-      - [Detalle del build en CodeBuild con el Build run ID y la fase `build` en verde](#detalle-del-build-en-codebuild-con-el-build-run-id-y-la-fase-build-en-verde)
+      - [Detalle del build en CodeBuild: iniciado por el pipeline, commit `501550b` y todas las fases en Correcto](#detalle-del-build-en-codebuild-iniciado-por-el-pipeline-commit-501550b-y-todas-las-fases-en-correcto)
       - [Pestaña Informes con las pruebas aprobadas](#pestaña-informes-con-las-pruebas-aprobadas)
-      - [Log de CloudWatch con `23 passed` y `Artifact created`](#log-de-cloudwatch-con-23-passed-y-artifact-created)
+      - [Log del build con las 23 pruebas aprobadas](#log-del-build-con-las-23-pruebas-aprobadas)
   - [8. Evidencia de ejecución fallida](#8-evidencia-de-ejecución-fallida)
     - [Evidencias](#evidencias-1)
       - [Pipeline con Build en rojo, con el Execution ID](#pipeline-con-build-en-rojo-con-el-execution-id)
@@ -208,20 +213,23 @@ app/schemas.py
 ```
 
 ## 6. Configuración en la consola de AWS
-
+ 
 > **Cuenta y región:** cuenta de AWS propia, región **us-east-1 (Norte de Virginia)**. CodeConnections, CodePipeline, CodeBuild y el bucket S3 de artefactos están en la misma región.
-
+ 
 ### 6.1 Conexión a GitHub (AWS CodeConnections / GitHub App)
-
+ 
 1. *Herramientas para desarrolladores → Configuración → Conexiones → Crear conexión* (o **Conectarse a GitHub** desde el asistente del pipeline).
 2. Proveedor: **GitHub**.
 3. **Instalar una nueva aplicación** → autorizar la **AWS Connector for GitHub** solo sobre el repositorio del equipo (*Only select repositories*).
 4. El estado de la conexión queda en **Disponible**.
+#### Conexión con GitHub en estado Disponible
+ 
+<img width="2545" height="680" alt="Conexión a GitHub" src="https://github.com/user-attachments/assets/7b1f6bbc-ba84-4b56-97ed-b53de2455e18" />
 
 ### 6.2 Pipeline de CodePipeline
-
+ 
 *CodePipeline → Crear canalización → Crear una canalización personalizada*
-
+ 
 | Paso | Opción | Valor |
 |---|---|---|
 | Configuración | Nombre | `blacklist-ci-pipeline` |
@@ -239,31 +247,48 @@ app/schemas.py
 | Compilación | Proveedor | AWS CodeBuild → proyecto `blacklist-ci-build-blueteam` (sección 6.3) |
 | Compilación | Artefacto de entrada / salida | `SourceArtifact` / `BuildArtifact` |
 | Compilación | Reintento automático | Desactivado |
-| Prueba | - | Omitida |
-| Implementación | - | **Omitida** (solo CI) |
-
+| Prueba | — | Omitida |
+| Implementación | — | **Omitida** (solo CI) |
+ 
 En los pipelines V2, cuando se define un desencadenador con filtros, la acción Source queda con `DetectChanges: false`: es el **desencadenador** (Push → `main`) el que inicia el pipeline con cada commit en `main`.
-
+ 
+#### Desencadenador del pipeline: Push en la rama `main`
+ 
+<img width="2537" height="1254" alt="Desencadenador" src="https://github.com/user-attachments/assets/2744e636-f893-4b1f-bcab-98b09f1c2de6" />
+ 
+#### Etapas del pipeline: Source (GitHub) y Build (CodeBuild), sin etapa de despliegue
+ 
+<img width="2537" height="1254" alt="image" src="https://github.com/user-attachments/assets/37660980-c0c5-4409-b10e-a00b48776ab1" />
+ 
 ### 6.3 Proyecto de CodeBuild
-
+ 
 Creado desde el asistente de CodePipeline (etapa Compilación → **Crear proyecto**), que fija automáticamente la fuente y los artefactos del proyecto como CodePipeline.
-
+ 
 | Opción | Valor |
 |---|---|
 | Nombre del proyecto | `blacklist-ci-build-blueteam` |
 | Tipo de proyecto | Proyecto predeterminado |
+| Origen | AWS CodePipeline |
 | Cómputo | EC2, bajo demanda |
 | Imagen | Administrada, contenedor, Amazon Linux, Standard: `aws/codebuild/amazonlinux-x86_64-standard:6.0` (siempre la versión más reciente) |
 | Rol de servicio | Nuevo: `codebuild-blacklist-ci-build-service-role` |
 | Modo privilegiado | No (el build no construye imágenes Docker) |
 | Especificación de compilación | **Utilizar un archivo de especificación de compilación** → `buildspec.yml` en la raíz (sin comandos insertados en la consola) |
+| Artefactos | AWS CodePipeline (el ZIP generado se entrega como `BuildArtifact`) |
 | Registros | CloudWatch Logs, grupo `/aws/codebuild/blacklist-ci-build-blueteam` |
-
+| Informes | Grupo `blacklist-ci-build-blueteam-pytest-reports` (JUnit XML desde `buildspec.yml`) |
+ 
+#### Configuración del proyecto: origen CodePipeline, imagen Amazon Linux y uso de `buildspec.yml`
+ 
+<img width="2537" height="1249" alt="image" src="https://github.com/user-attachments/assets/9ac82bf2-c6a8-4519-9d36-de37efacf7b9" />
+<img width="2537" height="712" alt="image" src="https://github.com/user-attachments/assets/c054d763-e5ab-4045-80a2-575eeb650548" />
+ 
 ### 6.4 Roles y permisos
-
+ 
 - **Rol de CodePipeline** (creado por el asistente): uso de la conexión de CodeConnections, inicio de builds en CodeBuild y lectura/escritura en el bucket S3 de artefactos.
 - **Rol de CodeBuild** (creado por el asistente): escritura de logs en CloudWatch, lectura/escritura en el bucket de artefactos y publicación de informes de pruebas.
 - **No** se conceden permisos de despliegue (Elastic Beanstalk) a la canalización en esta entrega.
+---
 
 ## 7. Evidencia de ejecución exitosa
 
@@ -387,7 +412,18 @@ Al llegar el commit a `main` (merge del PR #18), el desencadenador (Push → `ma
 <img width="700" height="445" alt="Pipeline en verde tras la corrección" src="https://github.com/user-attachments/assets/57354d9c-b68e-4ca2-8bf2-4d357e996eb2" />
 
 ## 9. Elastic Beanstalk y Postman
-
-La aplicación de la entrega 1 sigue ejecutándose en Elastic Beanstalk y es accesible por Postman. El despliegue se hace **manualmente**, cargando en el entorno el artefacto generado por la ejecución exitosa; el pipeline no despliega, porque esta entrega cubre solo CI.
-
+ 
+La aplicación es la misma de la entrega 1. La diferencia está en el origen del código desplegado: en lugar de un ZIP armado a mano, se cargó en Elastic Beanstalk el **artefacto generado por la ejecución exitosa del pipeline** (`blacklist-service-501550b.zip`), descargado del bucket S3 de CodePipeline. Ese artefacto solo existe porque el build pasó las 23 pruebas unitarias.
+ 
+El despliegue se hizo **manualmente**, porque esta entrega cubre solo CI: el pipeline no despliega.
+ 
+| Opción | Valor |
+|---|---|
+| Aplicación / entorno | `blacklist-service` / `blacklist-service-env` |
+| Plataforma | Docker running on 64bit Amazon Linux 2023 |
+| Tipo de entorno | Instancia única (`t3.micro`), sin balanceador de carga, para reducir costos |
+| Versión desplegada | Artefacto del commit `501550b` |
+| Base de datos | Amazon RDS PostgreSQL (`blacklist-db`, `db.t4g.micro`), sin acceso público |
+| Variables de entorno | `DB_HOST`, `DB_PORT`, `DB_NAME`, `DB_USER`, `DB_PASSWORD` y `JWT_SECRET_KEY` (mismas claves que en la entrega 1) |
+ 
 Las colecciones de Postman están en [`postman/`](../../postman/). La evidencia del entorno y de la colección se muestra en el video de sustentación.
