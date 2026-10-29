@@ -5,6 +5,8 @@ Curso MISW-4302 DevOps: Agilizando el Despliegue Continuo de Aplicaciones · Uni
 
 Documentación de la entrega: arquitectura, configuración en la consola de AWS y evidencias de las ejecuciones exitosa y fallida del pipeline. Este documento se exporta como `Proyecto 1 entrega 2 – Documento.pdf`.
 
+La sustentación en video la pueden encontrar en el siguiente link: [VIDEO](https://youtu.be/YgPlnWQGDbQ)
+
 ---
 
 ## Tabla de contenido
@@ -30,7 +32,6 @@ Documentación de la entrega: arquitectura, configuración en la consola de AWS 
       - [Etapas del pipeline: Source (GitHub) y Build (CodeBuild), sin etapa de despliegue](#etapas-del-pipeline-source-github-y-build-codebuild-sin-etapa-de-despliegue)
     - [6.3 Proyecto de CodeBuild](#63-proyecto-de-codebuild)
       - [Configuración del proyecto: origen CodePipeline, imagen Amazon Linux y uso de `buildspec.yml`](#configuración-del-proyecto-origen-codepipeline-imagen-amazon-linux-y-uso-de-buildspecyml)
-      - [Artefactos y registros del proyecto](#artefactos-y-registros-del-proyecto)
     - [6.4 Roles y permisos](#64-roles-y-permisos)
   - [7. Evidencia de ejecución exitosa](#7-evidencia-de-ejecución-exitosa)
     - [Evidencias](#evidencias)
