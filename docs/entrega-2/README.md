@@ -224,9 +224,8 @@ app/schemas.py
 4. El estado de la conexión queda en **Disponible**.
 #### Conexión con GitHub en estado Disponible
  
-<!-- Captura: Herramientas para desarrolladores → Configuración → Conexiones -->
-CAPTURA_CONEXION
- 
+<img width="2545" height="680" alt="Conexión a GitHub" src="https://github.com/user-attachments/assets/7b1f6bbc-ba84-4b56-97ed-b53de2455e18" />
+
 ### 6.2 Pipeline de CodePipeline
  
 *CodePipeline → Crear canalización → Crear una canalización personalizada*
@@ -255,13 +254,11 @@ En los pipelines V2, cuando se define un desencadenador con filtros, la acción 
  
 #### Desencadenador del pipeline: Push en la rama `main`
  
-<!-- Captura: CodePipeline → blacklist-ci-pipeline → pestaña Desencadenadores -->
-CAPTURA_DESENCADENADOR
+<img width="2537" height="1254" alt="Desencadenador" src="https://github.com/user-attachments/assets/2744e636-f893-4b1f-bcab-98b09f1c2de6" />
  
 #### Etapas del pipeline: Source (GitHub) y Build (CodeBuild), sin etapa de despliegue
  
-<!-- Captura: CodePipeline → blacklist-ci-pipeline → Editar, o pestaña Configuración, mostrando las dos etapas -->
-CAPTURA_ETAPAS
+<img width="2537" height="1254" alt="image" src="https://github.com/user-attachments/assets/37660980-c0c5-4409-b10e-a00b48776ab1" />
  
 ### 6.3 Proyecto de CodeBuild
  
@@ -283,13 +280,8 @@ Creado desde el asistente de CodePipeline (etapa Compilación → **Crear proyec
  
 #### Configuración del proyecto: origen CodePipeline, imagen Amazon Linux y uso de `buildspec.yml`
  
-<!-- Captura: CodeBuild → blacklist-ci-build-blueteam → pestaña Detalles de la compilación (secciones Origen, Entorno y Buildspec) -->
-CAPTURA_CODEBUILD_DETALLES
- 
-#### Artefactos y registros del proyecto
- 
-<!-- Captura (opcional): misma pestaña, más abajo (secciones Artefactos y Registros) -->
-CAPTURA_CODEBUILD_ARTEFACTOS
+<img width="2537" height="1249" alt="image" src="https://github.com/user-attachments/assets/9ac82bf2-c6a8-4519-9d36-de37efacf7b9" />
+<img width="2537" height="712" alt="image" src="https://github.com/user-attachments/assets/c054d763-e5ab-4045-80a2-575eeb650548" />
  
 ### 6.4 Roles y permisos
  
@@ -420,7 +412,18 @@ Al llegar el commit a `main` (merge del PR #18), el desencadenador (Push → `ma
 <img width="700" height="445" alt="Pipeline en verde tras la corrección" src="https://github.com/user-attachments/assets/57354d9c-b68e-4ca2-8bf2-4d357e996eb2" />
 
 ## 9. Elastic Beanstalk y Postman
-
-La aplicación de la entrega 1 sigue ejecutándose en Elastic Beanstalk y es accesible por Postman. El despliegue se hace **manualmente**, cargando en el entorno el artefacto generado por la ejecución exitosa; el pipeline no despliega, porque esta entrega cubre solo CI.
-
+ 
+La aplicación es la misma de la entrega 1. La diferencia está en el origen del código desplegado: en lugar de un ZIP armado a mano, se cargó en Elastic Beanstalk el **artefacto generado por la ejecución exitosa del pipeline** (`blacklist-service-501550b.zip`), descargado del bucket S3 de CodePipeline. Ese artefacto solo existe porque el build pasó las 23 pruebas unitarias.
+ 
+El despliegue se hizo **manualmente**, porque esta entrega cubre solo CI: el pipeline no despliega.
+ 
+| Opción | Valor |
+|---|---|
+| Aplicación / entorno | `blacklist-service` / `blacklist-service-env` |
+| Plataforma | Docker running on 64bit Amazon Linux 2023 |
+| Tipo de entorno | Instancia única (`t3.micro`), sin balanceador de carga, para reducir costos |
+| Versión desplegada | Artefacto del commit `501550b` |
+| Base de datos | Amazon RDS PostgreSQL (`blacklist-db`, `db.t4g.micro`), sin acceso público |
+| Variables de entorno | `DB_HOST`, `DB_PORT`, `DB_NAME`, `DB_USER`, `DB_PASSWORD` y `JWT_SECRET_KEY` (mismas claves que en la entrega 1) |
+ 
 Las colecciones de Postman están en [`postman/`](../../postman/). La evidencia del entorno y de la colección se muestra en el video de sustentación.
