@@ -1,0 +1,23 @@
+# AWS CodeDeploy AppSpec for ECS blue/green deployment (Entrega 3 — CD).
+#
+# The CodeDeployToECS action replaces <TASK_DEFINITION> with the ARN of the task
+# definition revision it generates after substituting <IMAGE1_NAME> in taskdef.json.
+#
+# ContainerName and ContainerPort MUST match deploy/taskdef.json and the ECS service:
+#   container name = blacklist
+#   container port = 8000
+#
+# The optional Hooks block is used only for the CD FAIL scenario (validation hook route A).
+# It is commented out here so the normal path has no manual gate. See deploy/cd-fail/.
+
+version: 0.0
+Resources:
+  - TargetService:
+      Type: AWS::ECS::Service
+      Properties:
+        TaskDefinition: <TASK_DEFINITION>
+        LoadBalancerInfo:
+          ContainerName: "blacklist"
+          ContainerPort: 8000
+# Hooks:
+#   - AfterAllowTestTraffic: "__CD_FAIL_VALIDATION_LAMBDA__"

@@ -1,0 +1,17 @@
+# CD FAIL — Ruta A: AppSpec con el hook de validación que fuerza el fallo.
+#
+# Reemplaza temporalmente deploy/appspec.yaml SOLO para el commit del escenario CD FAIL.
+# El nombre de la función de la Lambda debe coincidir con la desplegada (validation_hook).
+# Revertir a deploy/appspec.yaml (sin Hooks) para recuperar el camino normal.
+
+version: 0.0
+Resources:
+  - TargetService:
+      Type: AWS::ECS::Service
+      Properties:
+        TaskDefinition: <TASK_DEFINITION>
+        LoadBalancerInfo:
+          ContainerName: "blacklist"
+          ContainerPort: 8000
+Hooks:
+  - AfterAllowTestTraffic: "__CD_FAIL_VALIDATION_LAMBDA__"

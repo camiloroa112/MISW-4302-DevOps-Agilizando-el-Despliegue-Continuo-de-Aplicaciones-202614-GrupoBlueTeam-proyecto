@@ -229,3 +229,7 @@ __marimo__/
 .streamlit/secrets.toml
 reports/
 dist/
+
+# Entrega 3 (CD) - generated/temporary artifacts (never commit)
+imageDetail.json
+deploy/taskdef.baseline.json

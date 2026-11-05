@@ -1,0 +1,190 @@
+{
+  "info": {
+    "name": "Blacklist API - Entrega 3 CD (Blue Team)",
+    "description": "Colección de la Entrega 3 (CD) para verificar el servicio desplegado en ECS Fargate a través del ALB. Usa la variable baseUrl (URL del ALB, sin barra final, p. ej. http://mi-alb-123.us-east-1.elb.amazonaws.com) y token (JWT estático generado con scripts/generate_token.py). Ejecutar en orden con Run collection: el GET consulta el email creado por el POST. Las escrituras usan datos desechables (email único por ejecución). Grupo Blue Team - MISW-4302.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{token}}",
+        "type": "string"
+      }
+    ]
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "",
+      "description": "URL base del ALB del servicio Fargate, sin barra final."
+    },
+    {
+      "key": "token",
+      "value": "",
+      "description": "JWT estático (Bearer) generado con el mismo JWT_SECRET_KEY del servicio."
+    }
+  ],
+  "item": [
+    {
+      "name": "GET /health - Health check (200)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status is 200 OK', () => pm.response.to.have.status(200));",
+              "pm.test('Status payload is ok', () => pm.expect(pm.response.json().status).to.eql('ok'));"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "auth": { "type": "noauth" },
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/health",
+          "host": ["{{baseUrl}}"],
+          "path": ["health"]
+        },
+        "description": "Endpoint del health check del balanceador. No requiere token. Es el target health check de los target groups blue/green."
+      }
+    },
+    {
+      "name": "POST /blacklists - 201 (email desechable)",
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "const ts = Date.now();",
+              "pm.collectionVariables.set('cd_email', `Cd.${ts}@Mail.com`);",
+              "pm.collectionVariables.set('cd_email_lower', `cd.${ts}@mail.com`);"
+            ]
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status is 201 Created', () => pm.response.to.have.status(201));",
+              "pm.test('Confirmation message', () => pm.expect(pm.response.json().msg).to.eql('Email added to the global blacklist'));"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"email\": \"{{cd_email}}\",\n  \"app_uuid\": \"6f9619ff-8b86-d011-b42d-00cf4fc964ff\",\n  \"blocked_reason\": \"Entrega 3 CD smoke test\"\n}",
+          "options": { "raw": { "language": "json" } }
+        },
+        "url": {
+          "raw": "{{baseUrl}}/blacklists",
+          "host": ["{{baseUrl}}"],
+          "path": ["blacklists"]
+        },
+        "description": "Agrega un email desechable a la lista negra. El servidor registra IP y fecha/hora. El email se normaliza a minúsculas."
+      }
+    },
+    {
+      "name": "GET /blacklists/<email> - 200 true",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status is 200 OK', () => pm.response.to.have.status(200));",
+              "pm.test('Email is blacklisted', () => pm.expect(pm.response.json().is_blacklisted).to.eql(true));",
+              "pm.test('Returns the reason', () => pm.expect(pm.response.json().blocked_reason).to.eql('Entrega 3 CD smoke test'));"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/blacklists/{{cd_email}}",
+          "host": ["{{baseUrl}}"],
+          "path": ["blacklists", "{{cd_email}}"]
+        },
+        "description": "Consulta el email creado en el POST anterior (con mayúsculas: valida la normalización). Ejecutar después del POST."
+      }
+    },
+    {
+      "name": "GET /blacklists/<email> - 200 false",
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.collectionVariables.set('cd_absent', `absent.${Date.now()}@mail.com`);"
+            ]
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status is 200 OK', () => pm.response.to.have.status(200));",
+              "pm.test('Email is not blacklisted', () => pm.expect(pm.response.json().is_blacklisted).to.eql(false));",
+              "pm.test('Reason is null', () => pm.expect(pm.response.json().blocked_reason).to.be.null);"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/blacklists/{{cd_absent}}",
+          "host": ["{{baseUrl}}"],
+          "path": ["blacklists", "{{cd_absent}}"]
+        },
+        "description": "Un email que nunca se agregó responde false y blocked_reason en null."
+      }
+    },
+    {
+      "name": "POST /blacklists - 401 sin token",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status is 401 Unauthorized', () => pm.response.to.have.status(401));",
+              "pm.test('Auth message', () => pm.expect(pm.response.json().msg).to.eql('Missing or invalid token'));"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "auth": { "type": "noauth" },
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"email\": \"sin.token@mail.com\",\n  \"app_uuid\": \"6f9619ff-8b86-d011-b42d-00cf4fc964ff\"\n}",
+          "options": { "raw": { "language": "json" } }
+        },
+        "url": {
+          "raw": "{{baseUrl}}/blacklists",
+          "host": ["{{baseUrl}}"],
+          "path": ["blacklists"]
+        },
+        "description": "Sin header Authorization la solicitud se rechaza con 401."
+      }
+    }
+  ]
+}

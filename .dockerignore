@@ -9,3 +9,5 @@ tests/
 scripts/
 docs/
 *.zip
+deploy/
+imageDetail.json

@@ -1,0 +1,133 @@
+# AWS CodeBuild build specification for the Blacklist microservice (Entrega 3 — CI for CD).
+#
+# This buildspec is used by the Delivery 3 CodeBuild project. It replaces the Elastic
+# Beanstalk ZIP flow (kept in buildspec.yml) with a container flow for ECS Fargate:
+#
+#   install    -> provision uv and the exact locked dependencies.
+#   pre_build  -> diagnostics, lock check, and ECR login.
+#   build      -> run the existing unit tests. CodeBuild stops the build if pytest fails,
+#                 so nothing is published when a test fails.
+#   post_build -> ONLY when the build is still succeeding: build the image for linux/amd64,
+#                 push it to ECR tagged with the resolved commit SHA, record the digest, and
+#                 emit imageDetail.json (ImageURI) as the deployable artifact for CodeDeploy.
+#
+# Gate: a failed test fails CodeBuild and prevents image publication and any deployable
+# artifact for that execution (CD cannot run).
+#
+# Required CodeBuild configuration (set in the project, NOT here):
+#   - Privileged mode ENABLED (needed for `docker build`).
+#   - Service role with ECR permissions (GetAuthorizationToken, Batch*Layer, PutImage, etc.).
+#   - Environment variables:
+#       AWS_ACCOUNT_ID   -> the account that owns the ECR repository.
+#       AWS_DEFAULT_REGION -> provided by CodeBuild; the ECR region.
+#       ECR_REPOSITORY   -> the ECR repository name (e.g. blacklist-service).
+#       IMAGE_TAG_PREFIX -> optional prefix for the image tag (default: empty).
+#
+# Never hardcode AWS credentials or account values in this file.
+
+version: 0.2
+
+env:
+  variables:
+    # Pin the uv version used locally so CI and local builds match.
+    UV_VERSION: "0.9.5"
+    # ECR repository name. Override in the CodeBuild project if different.
+    ECR_REPOSITORY: "blacklist-service"
+    # Optional tag prefix (kept empty by default). The tag itself is the commit SHA.
+    IMAGE_TAG_PREFIX: ""
+
+phases:
+  install:
+    runtime-versions:
+      python: 3.12
+    commands:
+      - echo "Installing uv ${UV_VERSION}"
+      - curl -LsSf https://astral.sh/uv/${UV_VERSION}/install.sh | sh
+      - export PATH="$HOME/.local/bin:$PATH"
+      - uv sync --frozen --dev
+
+  pre_build:
+    commands:
+      - export PATH="$HOME/.local/bin:$PATH"
+      - echo "Python version:" && uv run python --version
+      # Resolve the commit SHA used for the image tag; fail if it is missing.
+      - |
+        if [ -z "${CODEBUILD_RESOLVED_SOURCE_VERSION:-}" ]; then
+          echo "CODEBUILD_RESOLVED_SOURCE_VERSION is empty; cannot derive a traceable image tag."
+          exit 1
+        fi
+      - export IMAGE_TAG="${IMAGE_TAG_PREFIX}${CODEBUILD_RESOLVED_SOURCE_VERSION}"
+      - echo "Resolved source version:" && echo "${CODEBUILD_RESOLVED_SOURCE_VERSION}"
+      - echo "Image tag:" && echo "${IMAGE_TAG}"
+      # Fail early if the lock file drifted from pyproject.toml.
+      - uv lock --locked
+      # Compute the ECR registry and repository URI.
+      - export ECR_REGISTRY="${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_DEFAULT_REGION}.amazonaws.com"
+      - export IMAGE_REPO_URI="${ECR_REGISTRY}/${ECR_REPOSITORY}"
+      - echo "ECR repository URI:" && echo "${IMAGE_REPO_URI}"
+      # Log in to ECR (no secrets printed).
+      - echo "Logging in to Amazon ECR"
+      - aws ecr get-login-password --region "${AWS_DEFAULT_REGION}" | docker login --username AWS --password-stdin "${ECR_REGISTRY}"
+
+  build:
+    commands:
+      - export PATH="$HOME/.local/bin:$PATH"
+      - echo "Running unit tests (gate before any publication)"
+      - uv run pytest -v --junitxml=reports/junit.xml
+
+  post_build:
+    commands:
+      - export PATH="$HOME/.local/bin:$PATH"
+      # Do not publish anything if the build is already failing (e.g. a test failed).
+      - |
+        if [ "${CODEBUILD_BUILD_SUCCEEDING:-0}" != "1" ]; then
+          echo "Build is failing; skipping image build, push and imageDetail.json."
+          exit 1
+        fi
+      - export IMAGE_TAG="${IMAGE_TAG_PREFIX}${CODEBUILD_RESOLVED_SOURCE_VERSION}"
+      - export ECR_REGISTRY="${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_DEFAULT_REGION}.amazonaws.com"
+      - export IMAGE_REPO_URI="${ECR_REGISTRY}/${ECR_REPOSITORY}"
+      - echo "Tests passed. Building the container image for linux/amd64 (Fargate x86_64)."
+      # Reuse the existing image safely on retries: if the tag already exists in ECR, do not rebuild.
+      - |
+        set -e
+        EXISTING_DIGEST="$(aws ecr describe-images \
+          --repository-name "${ECR_REPOSITORY}" \
+          --image-ids imageTag="${IMAGE_TAG}" \
+          --query 'imageDetails[0].imageDigest' --output text 2>/dev/null || echo "None")"
+        if [ "${EXISTING_DIGEST}" != "None" ] && [ -n "${EXISTING_DIGEST}" ]; then
+          echo "Image tag ${IMAGE_TAG} already exists with digest ${EXISTING_DIGEST}; reusing it."
+          IMAGE_DIGEST="${EXISTING_DIGEST}"
+        else
+          # Build explicitly for amd64 and without provenance so ECS gets a plain image manifest.
+          docker build --platform linux/amd64 --provenance=false -t "${IMAGE_REPO_URI}:${IMAGE_TAG}" .
+          docker push "${IMAGE_REPO_URI}:${IMAGE_TAG}"
+          IMAGE_DIGEST="$(aws ecr describe-images \
+            --repository-name "${ECR_REPOSITORY}" \
+            --image-ids imageTag="${IMAGE_TAG}" \
+            --query 'imageDetails[0].imageDigest' --output text)"
+        fi
+        echo "Published image digest: ${IMAGE_DIGEST}"
+        # imageDetail.json consumed by the CodeDeployToECS action to replace <IMAGE1_NAME>.
+        printf '{"ImageURI":"%s"}\n' "${IMAGE_REPO_URI}:${IMAGE_TAG}" > imageDetail.json
+      - echo "imageDetail.json:" && cat imageDetail.json
+
+# Deployable artifact for CodeDeploy: imageDetail.json plus the deploy templates so the
+# Deploy action can read taskdef/appspec and the image URI consistently.
+artifacts:
+  files:
+    - imageDetail.json
+    - deploy/taskdef.json
+    - deploy/appspec.yaml
+  name: blacklist-ecs-build-artifact
+
+cache:
+  paths:
+    - "/root/.cache/uv/**/*"
+
+reports:
+  pytest-reports:
+    files:
+      - junit.xml
+    base-directory: reports
+    file-format: JUNITXML
