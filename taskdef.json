@@ -1,5 +1,5 @@
 {
-  "family": "blacklist-task",
+  "family": "blacklist-service-python",
   "executionRoleArn": "arn:aws:iam::773658095475:role/ecsTaskExecutionRole",
   "networkMode": "awsvpc",
   "requiresCompatibilities": ["FARGATE"],
