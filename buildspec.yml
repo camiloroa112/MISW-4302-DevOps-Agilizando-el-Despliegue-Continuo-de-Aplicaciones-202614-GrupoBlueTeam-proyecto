@@ -17,9 +17,15 @@ version: 0.2
 env:
   variables:
     # Pin the uv version used locally so CI and local builds match.
-    UV_VERSION: "0.9"
-    # Directory where the deployable artifact is written.
-    ARTIFACT_DIR: "dist"
+    UV_VERSION: "0.9.5"
+    # AWS account and region for the ECR repository where the Docker image is pushed.
+    AWS_ACCOUNT_ID: "773658095475"
+    # AWS region for the ECR repository where the Docker image is pushed.
+    AWS_REGION: "us-east-1"
+    # Name of the ECR repository where the Docker image is pushed.
+    IMAGE_REPO: "blacklist-service"
+    # Name of the Docker container in the Elastic Beanstalk environment.
+    CONTAINER_NAME: "blacklist-app"
 
 phases:
   install:
@@ -36,43 +42,75 @@ phases:
 
   pre_build:
     commands:
+      # Saving the PATH for the rest of the build phases.
       - export PATH="$HOME/.local/bin:$PATH"
+      # Print the Python version and the resolved source version for traceability.
       - echo "Python version:" && uv run python --version
+      # Print the resolved source version (commit SHA) for traceability.
       - echo "Resolved source version:" && echo "${CODEBUILD_RESOLVED_SOURCE_VERSION:-unknown}"
       # Fail early if the lock file drifted from pyproject.toml.
       - uv lock --locked
+      # Full URI of the ECR repository.
+      - REPO_URI=${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${IMAGE_REPO}
+      # Tag the image with the short commit SHA so every deployment is traceable.
+      - IMAGE_TAG=$(echo ${CODEBUILD_RESOLVED_SOURCE_VERSION} | cut -c 1-7)
+      # Tag the image with the full commit SHA so every deployment is traceable.
+      - echo "Logging in to Amazon ECR"
+      # Authenticate Docker against the private ECR registry.
+      - aws ecr get-login-password --region ${AWS_REGION} | docker login --username AWS --password-stdin ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com
 
   build:
     commands:
+      # Saving the PATH for the rest of the build phases.
       - export PATH="$HOME/.local/bin:$PATH"
+      # Print the resolved source version (commit SHA) for traceability.
       - echo "Running unit tests"
-      # If pytest exits non-zero, CodeBuild marks the build as FAILED and skips
-      # post_build, so no artifact is generated for a failing test suite.
-      - uv run pytest -v
+      # If any test fails, this phase fails and the image is never built.
+      - uv run pytest -v --junitxml=reports/junit.xml
+      - echo "Tests passed. Building Docker image ${IMAGE_TAG}"
+      # Build the image tagged with the commit SHA.
+      - docker build -t ${REPO_URI}:${IMAGE_TAG} .
+      # Also tag it as latest for manual runs.
+      - docker tag ${REPO_URI}:${IMAGE_TAG} ${REPO_URI}:latest
 
   post_build:
     commands:
-      - export PATH="$HOME/.local/bin:$PATH"
       # CODEBUILD_BUILD_SUCCEEDING is 1 while the build is still healthy.
       - |
         if [ "${CODEBUILD_BUILD_SUCCEEDING:-0}" != "1" ]; then
-          echo "Build is failing; skipping artifact packaging."
+          echo "Build is failing; skipping image push."
           exit 1
         fi
-      - echo "Tests passed. Packaging the deployable Elastic Beanstalk Docker artifact."
-      # Build the traceable ZIP (named with the commit SHA) into ARTIFACT_DIR.
-      - uv run python -m scripts.package_artifact --output-dir "${ARTIFACT_DIR}"
-      - echo "Artifact contents:" && ls -la "${ARTIFACT_DIR}"
+      # Print the resolved source version (commit SHA) for traceability.
+      - echo "Pushing image to Amazon ECR"
+      # Push both tags to ECR.
+      - docker push ${REPO_URI}:${IMAGE_TAG}
+      # Also push the latest tag for manual runs.
+      - docker push ${REPO_URI}:latest
+      # File used by the standard ECS deploy action (kept for compatibility).
+      - printf '[{"name":"%s","imageUri":"%s"}]' "${CONTAINER_NAME}" "${REPO_URI}:${IMAGE_TAG}" > imagedefinitions.json
+      # File used by the ECS Blue/Green (CodeDeploy) action to replace <IMAGE1_NAME> in taskdef.json.
+      - printf '{"ImageURI":"%s"}' "${REPO_URI}:${IMAGE_TAG}" > imageDetail.json
+      # Print the image detail for traceability.
+      - echo "Image detail:" && cat imageDetail.json
 
-# Retain only the generated ZIP as the build artifact. CodePipeline stores it in
-# its S3 artifact bucket. base-directory keeps the ZIP at the root of the artifact.
+# Files handed to the Deploy stage: the image reference plus the CodeDeploy configuration.
 artifacts:
   files:
-    - "*.zip"
-  base-directory: "dist"
-  name: blacklist-service-artifact
+    - imagedefinitions.json
+    - imageDetail.json
+    - appspec.json
+    - taskdef.json
 
 # Cache uv's download cache between builds to speed up dependency installation.
 cache:
   paths:
     - "/root/.cache/uv/**/*"
+
+# Store the pytest JUnit XML report in the CodeBuild build artifacts so that publish the pytest JUnit XML results in the CodeBuild "Reports" tab.
+reports:
+  pytest-reports:
+    files:
+      - junit.xml
+    base-directory: reports
+    file-format: JUNITXML

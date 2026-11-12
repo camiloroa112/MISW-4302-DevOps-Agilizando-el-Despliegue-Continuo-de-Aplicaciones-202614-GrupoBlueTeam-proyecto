@@ -7,22 +7,15 @@ import subprocess
 from pathlib import Path
 
 # Paths (relative to the repository root) that must be included in the Elastic Beanstalk Docker artifact
-INCLUDE_PATHS = (
-    "Dockerfile",
-    ".dockerignore",
-    "application.py",
-    "requirements.txt",
-    "pyproject.toml",
-    "uv.lock",
-    "app",
-    ".ebextensions",
-)
+INCLUDE_PATHS = ("Dockerfile", ".dockerignore", "application.py", "requirements.txt", "pyproject.toml", "uv.lock", "app", ".ebextensions",)
 
 # Directory names that must never be packaged, even if they appear inside an included folder
 EXCLUDED_DIR_NAMES = frozenset({"__pycache__", ".venv", "venv", ".pytest_cache", ".git", "tests", "scripts", "docs"})
 
 # File names or suffixes that must never be packaged (secrets, environment files, temporary files)
 EXCLUDED_FILE_NAMES = frozenset({".env"})
+
+# File suffixes that must never be packaged (compiled Python, archives, logs)
 EXCLUDED_FILE_SUFFIXES = (".pyc", ".pyo", ".zip", ".log")
 
 
@@ -37,7 +30,6 @@ def get_repository_root() -> Path:
 
     # The script lives in <root>/scripts, so the root is one level up
     return Path(__file__).resolve().parent.parent
-
 
 # Read the short commit SHA so the artifact name is traceable to a specific revision
 def get_commit_sha(root: Path) -> str:
@@ -57,11 +49,17 @@ def get_commit_sha(root: Path) -> str:
 
     # Fall back to asking git directly when running locally
     try:
+        
+        # Use git to get the short SHA of the current commit (seven characters)
         result = subprocess.run(["git", "rev-parse", "--short", "HEAD"], cwd = root, capture_output = True, text = True, check = True)
+        
+        # Return the stripped output (the short SHA) to the caller
         return result.stdout.strip()
 
     # Any failure (git missing, not a repository) yields a neutral placeholder
     except (subprocess.CalledProcessError, FileNotFoundError):
+        
+        # Return a neutral placeholder so the artifact name is still valid and unique
         return "nogit"
 
 
@@ -118,18 +116,25 @@ def collect_files(root: Path) -> list[Path]:
 
         # Add a single file directly when it passes the filters
         if source.is_file():
+
+            # Only add the file if it is not excluded by name, suffix, or parent directory
             if should_include_file(source):
                 collected.append(source)
 
         # Recurse into directories and add every file that passes the filters
         else:
+            
+            # Walk the directory tree in a reproducible order so the ZIP is deterministic
             for child in sorted(source.rglob("*")):
+
+                # Only add files (not directories) that pass the filters
                 if child.is_file() and should_include_file(child):
+                    
+                    # Add the file to the collection
                     collected.append(child)
 
     # Return the collected files
     return collected
-
 
 # Build the deployable ZIP artifact and return its path
 def build_artifact(output_dir: Path, name: str | None = None) -> Path:
@@ -161,6 +166,8 @@ def build_artifact(output_dir: Path, name: str | None = None) -> Path:
 
     # Write the ZIP with stored paths relative to the repository root so Elastic Beanstalk sees a clean layout
     with zipfile.ZipFile(artifact_path, "w", compression = zipfile.ZIP_DEFLATED) as archive:
+        
+        # Add every collected file to the ZIP with a path relative to the repository root
         for file_path in files:
 
             # The path inside the ZIP is relative to the repository root, using forward slashes
@@ -174,7 +181,6 @@ def build_artifact(output_dir: Path, name: str | None = None) -> Path:
 
     # Return the artifact path
     return artifact_path
-
 
 # Parse command-line arguments
 def parse_arguments(argv: list[str]) -> argparse.Namespace:
@@ -197,7 +203,6 @@ def parse_arguments(argv: list[str]) -> argparse.Namespace:
     # Return the parsed arguments
     return parser.parse_args(argv)
 
-
 # Entry point used by CodeBuild and local runs
 def main(argv: list[str]) -> int:
     """
@@ -218,7 +223,6 @@ def main(argv: list[str]) -> int:
 
     # Signal success
     return 0
-
 
 # Run the packager when executed directly
 if __name__ == "__main__":

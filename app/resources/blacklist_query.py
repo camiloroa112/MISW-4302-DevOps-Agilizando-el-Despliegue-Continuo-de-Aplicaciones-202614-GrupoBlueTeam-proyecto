@@ -12,8 +12,14 @@ from sqlalchemy import select
 
 # GET /blacklists/<string:email>: check if an email is in the global blacklist
 class BlacklistQueryResource(Resource):
+    """
+    Introduction:
+        - This resource handles the GET /blacklists/<email> endpoint.
+    """
+    
     # Require a valid JWT before running the handler
     @jwt_required()
+
     def get(self, email: str = "") -> tuple[dict, int]:
         """
         Introduction:
@@ -32,19 +38,13 @@ class BlacklistQueryResource(Resource):
 
         # Look up the normalized email in the database
         normalized_email = data["email"]
+
+        # Check if the email is blacklisted
         entry = db.session.scalar(select(Blacklist).filter_by(email=normalized_email))
 
         # Build the response following the documented contract
         if entry is not None:
-            return {
-                "email": normalized_email,
-                "is_blacklisted": True,
-                "blocked_reason": entry.blocked_reason,
-            }, 200
+            return {"email": normalized_email, "is_blacklisted": True, "blocked_reason": entry.blocked_reason,}, 200
 
         # The email is not blacklisted
-        return {
-            "email": normalized_email,
-            "is_blacklisted": False,
-            "blocked_reason": None,
-        }, 200
+        return {"email": normalized_email, "is_blacklisted": False, "blocked_reason": None,}, 200
