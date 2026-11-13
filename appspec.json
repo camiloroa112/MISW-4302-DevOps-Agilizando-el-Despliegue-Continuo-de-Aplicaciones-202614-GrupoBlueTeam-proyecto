@@ -7,7 +7,7 @@
         "Properties": {
           "TaskDefinition": "<TASK_DEFINITION>",
           "LoadBalancerInfo": {
-            "ContainerName": "blacklist-apx",
+            "ContainerName": "blacklist-app",
             "ContainerPort": 5000
           }
         }
