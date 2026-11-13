@@ -319,20 +319,23 @@ aws deploy create-deployment-group \
  
 | Dato | Valor |
 |---|---|
-| Commit | PENDIENTE |
-| Execution ID del pipeline | PENDIENTE |
-| Build ID de CodeBuild | PENDIENTE |
+| Commit | 9973acc7 |
+| Execution ID del pipeline | 35067cd2-a0ff-45d9-be5f-8d681650d20e |
+| Build ID de CodeBuild | 1d0e1267-ee66-49fd-818d-34b8a38366ef |
 | Resultado de pruebas | PENDIENTE (esperado: 1 failed) |
 | Imagen en ECR para ese commit | No generada |
 | Etapa Deploy | No ejecutada |
  
 **Hallazgos:**
  
-- PENDIENTE
-<!-- CAPTURA: pipeline con Build en rojo y Deploy sin ejecutar -->
-<!-- CAPTURA: log de CodeBuild con el bloque FAILURES y el resumen de pytest -->
-<!-- CAPTURA: post_build con "Build is failing; skipping image push." -->
-<!-- CAPTURA: ECR sin una imagen etiquetada con el SHA de ese commit -->
+### CAPTURA: pipeline con Build en rojo y Deploy sin ejecutar
+<img width="2149" height="798" alt="image" src="https://github.com/user-attachments/assets/1770d33c-c101-4393-9295-9fca7be538a9" />
+
+### CAPTURA: log de CodeBuild con el bloque FAILURES y el resumen de pytest
+<img width="1397" height="976" alt="image" src="https://github.com/user-attachments/assets/5890a2a0-e33c-4266-84ea-e3163dbcc9c0" />
+
+### CAPTURA: post_build con "Build is failing; skipping image push."
+<img width="1397" height="293" alt="image" src="https://github.com/user-attachments/assets/6bb80fa0-b74e-493c-9b7f-afa608757a75" />
  
 ### 7.2 CI exitoso y CD exitoso
  
@@ -340,22 +343,24 @@ aws deploy create-deployment-group \
  
 | Dato | Valor |
 |---|---|
-| Commit | PENDIENTE |
-| Execution ID del pipeline | PENDIENTE |
-| Build ID de CodeBuild | PENDIENTE |
-| Resultado de pruebas | PENDIENTE |
-| Imagen publicada | `blacklist-service:<sha>` · PENDIENTE |
-| ID de implementación de CodeDeploy | PENDIENTE |
-| Nueva revisión de la tarea | `blacklist-service-python:` PENDIENTE |
+| Commit | 04315d4e |
+| Execution ID del pipeline | 37ae3316-7760-42d8-afd6-8781cbb40594 |
+| Build ID de CodeBuild | ff005a0a-8a8b-4b45-98d4-971cf8a0e79d |
+| Resultado de pruebas | Deployment d-AMN62SHSM succeeded |
+| Imagen publicada | sha256:9d304a2a6481d964d509bb70ab3ec6b648742b206fb9ce5a6d97a1d1be67f2a2 |
+| ID de implementación de CodeDeploy | d-AMN62SHSM |
+| Nueva revisión de la tarea | blacklist-service-python:4 |
  
 **Hallazgos:**
  
-- PENDIENTE
-<!-- CAPTURA: pipeline con Source, Build y Deploy en verde -->
-<!-- CAPTURA: CodeDeploy → implementación con los pasos y el desplazamiento de tráfico (0 % → 100 % al reemplazo) -->
-<!-- CAPTURA: listener HTTP:80 apuntando al grupo green después del cambio -->
-<!-- CAPTURA: ECR con la imagen etiquetada con el SHA del commit -->
-<!-- CAPTURA: /health respondiendo durante y después del despliegue -->
+### CAPTURA: Pipeline con Source, Build y Deploy en verde
+<img width="1758" height="862" alt="image" src="https://github.com/user-attachments/assets/959543bb-869e-406c-acf5-e59ad96e4911" />
+
+### CAPTURA: Desplazamiento de tráfico
+<img width="2532" height="1252" alt="image" src="https://github.com/user-attachments/assets/66abd6e4-57f6-45b6-a8a5-b9605e22782b" />
+
+### CAPTURA: ECR con la imagen etiquetada con el SHA del commit
+<img width="2532" height="544" alt="image" src="https://github.com/user-attachments/assets/51a5eac7-0f05-4079-b36d-07d36090c3ad" />
  
 ### 7.3 CI exitoso y CD fallido
  
@@ -365,21 +370,24 @@ aws deploy create-deployment-group \
  
 | Dato | Valor |
 |---|---|
-| Commit | PENDIENTE |
-| Cambio introducido | PENDIENTE |
-| Execution ID del pipeline | PENDIENTE |
+| Commit | f84c28e1  |
+| Cambio introducido | Modificación del nombre del contenedor en appspec.json, pasando de blacklist-app a blacklist-apx |
+| Execution ID del pipeline | becc6be2-0dda-435e-bb7f-d66a750577a7 |
 | Resultado del Build | Exitoso · PENDIENTE |
-| ID de implementación de CodeDeploy | PENDIENTE |
-| Motivo del fallo | PENDIENTE |
-| Rollback | PENDIENTE |
+| ID de implementación de CodeDeploy | d-J5EWQAJSM |
+| Motivo del fallo | The ECS service cannot be updated due to an unexpected error: The container blacklist-apx does not exist in the task definition. (Service: AmazonECS; Status Code: 400; Error Code: InvalidParameterException; Request ID: 9031a966-0a90-42a1-b790-c19417c52cb8; Proxy: null). Check your ECS service status. |
+| Rollback | d-J5EWQAJSM, Realizado correctamente, de 1:50 a 1:57 a. m. Es la reversión automática que hizo CodeDeploy. |
  
 **Hallazgos:**
  
-- PENDIENTE
-<!-- CAPTURA: pipeline con Build en verde y Deploy en rojo -->
-<!-- CAPTURA: CodeDeploy → implementación fallida con el motivo y el rollback -->
-<!-- CAPTURA: listener HTTP:80 que sigue apuntando a la versión anterior -->
-<!-- CAPTURA: /health respondiendo durante el fallo -->
+### CAPTURA: Pipeline con Build en verde y Deploy en rojo
+<img width="2532" height="810" alt="image" src="https://github.com/user-attachments/assets/20fa6037-a053-4c62-8ee5-de5c762b14ff" />
+
+### CAPTURA: CodeDeploy → implementación fallida con el motivo y el rollback
+<img width="2532" height="1254" alt="image" src="https://github.com/user-attachments/assets/8695aa8d-69de-45c4-94f6-a03a1af35564" />
+
+### CAPTURA: /health respondiendo durante el fallo
+<img width="1009" height="160" alt="image" src="https://github.com/user-attachments/assets/21a69db3-31e7-4221-9fee-e05b7c9dc8e5" />
  
 ## 8. Hallazgos de la configuración
  
