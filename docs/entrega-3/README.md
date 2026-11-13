@@ -320,9 +320,9 @@ aws deploy create-deployment-group \
  
 ### 7.1 CI fallido
  
-**Objetivo:** demostrar que, si el despliegue falla, el pipeline lo detiene y **revierte** automáticamente a la versión anterior, sin afectar el servicio.
+**Objetivo:** demostrar que, si una prueba falla, el pipeline se detiene en Build, no se publica imagen y no se despliega nada.
 
-**Método:** se integró a `main` un cambio en `appspec.json` que cambia el `ContainerName` a `blacklist-apx`, un contenedor que no existe en la definición de tarea, sin tocar el código ni las pruebas. Las pruebas pasan y la imagen se publica, pero CodeDeploy rechaza el despliegue. Después se revirtió con un nuevo commit.
+**Método:** se integró a `main` un cambio que rompe una prueba unitaria sin tocar el código de la aplicación (`test_create_returns_201` esperando `200` en lugar de `201`). Después se revirtió con un nuevo commit.
  
 | Dato | Valor |
 |---|---|
@@ -382,9 +382,9 @@ aws deploy create-deployment-group \
  
 ### 7.3 CI exitoso y CD fallido
  
-**Objetivo:** demostrar que, si la versión nueva no queda sana, CodeDeploy falla el despliegue y **revierte** automáticamente a la versión anterior, sin afectar el servicio.
- 
-**Método:** se integró a `main` un cambio en `taskdef.json` que deja a la tarea nueva sin poder arrancar, sin tocar el código ni las pruebas. Las pruebas pasan (usan SQLite en memoria), la imagen se publica, pero la tarea green no supera las comprobaciones de estado. Después se revirtió con un nuevo commit.
+**Objetivo:** demostrar que, si el despliegue falla, el pipeline lo detiene y **revierte** automáticamente a la versión anterior, sin afectar el servicio.
+
+**Método:** se integró a `main` un cambio en `appspec.json` que cambia el `ContainerName` a `blacklist-apx`, un contenedor que no existe en la definición de tarea, sin tocar el código ni las pruebas. Las pruebas pasan y la imagen se publica, pero CodeDeploy rechaza el despliegue. Después se revirtió con un nuevo commit.
  
 | Dato | Valor |
 |---|---|
