@@ -13,7 +13,6 @@ La sustentación en video la pueden encontrar en el siguiente link: [VIDEO](http
  
 - [Proyecto 1 · Entrega 3 — Entrega Continua (CD) sobre AWS Fargate](#proyecto-1--entrega-3--entrega-continua-cd-sobre-aws-fargate)
   - [Tabla de contenido](#tabla-de-contenido)
-  - [0. Rama principal: `main` en lugar de `master`](#0-rama-principal-main-en-lugar-de-master)
   - [1. Objetivo de la entrega](#1-objetivo-de-la-entrega)
   - [2. Arquitectura](#2-arquitectura)
   - [3. Recursos de AWS](#3-recursos-de-aws)
@@ -46,10 +45,6 @@ La sustentación en video la pueden encontrar en el siguiente link: [VIDEO](http
     - [CAPTURA: /health respondiendo durante el fallo](#captura-health-respondiendo-durante-el-fallo)
   - [8. Hallazgos de la configuración](#8-hallazgos-de-la-configuración)
 ---
- 
-## 0. Rama principal: `main` en lugar de `master`
- 
-El enunciado se refiere a la rama principal como **`master`**. En este repositorio la rama principal es **`main`**, que recibe los cambios integrados por el flujo del equipo y cumple el rol que el enunciado llama `master`. El pipeline se dispara con cada push a `main`.
  
 ## 1. Objetivo de la entrega
  
@@ -333,11 +328,16 @@ aws deploy create-deployment-group \
 | Commit | 9973acc7 |
 | Execution ID del pipeline | 35067cd2-a0ff-45d9-be5f-8d681650d20e |
 | Build ID de CodeBuild | 1d0e1267-ee66-49fd-818d-34b8a38366ef |
-| Resultado de pruebas | PENDIENTE (esperado: 1 failed) |
+| Resultado de pruebas | 1 failed, 22 passed in 0.53s |
 | Imagen en ECR para ese commit | No generada |
 | Etapa Deploy | No ejecutada |
  
 **Hallazgos:**
+
+- El pipeline se disparó automáticamente con el commit en main y se detuvo en la etapa Build.
+- El log de CodeBuild identifica la prueba exacta que falló (test_create_returns_201) y el motivo (assert 201 == 200), sin necesidad de reproducir el error en local.
+- La fase post_build detectó el fallo con CODEBUILD_BUILD_SUCCEEDING y no publicó la imagen: en ECR no existe ninguna imagen para ese commit.
+- La etapa Deploy no se ejecutó y CodeDeploy no registra ninguna implementación para esta ejecución. Una versión con pruebas rotas nunca llega a Fargate.
  
 ### CAPTURA: pipeline con Build en rojo y Deploy sin ejecutar
 <img width="2149" height="798" alt="image" src="https://github.com/user-attachments/assets/1770d33c-c101-4393-9295-9fca7be538a9" />
@@ -357,12 +357,18 @@ aws deploy create-deployment-group \
 | Commit | 04315d4e |
 | Execution ID del pipeline | 37ae3316-7760-42d8-afd6-8781cbb40594 |
 | Build ID de CodeBuild | ff005a0a-8a8b-4b45-98d4-971cf8a0e79d |
-| Resultado de pruebas | Deployment d-AMN62SHSM succeeded |
-| Imagen publicada | sha256:9d304a2a6481d964d509bb70ab3ec6b648742b206fb9ce5a6d97a1d1be67f2a2 |
+| Resultado de pruebas | 23 passed in 0.49s |
+| Imagen publicada | blacklist-service:04315d4 (sha256:9d304a2a6481d964d509bb70ab3ec6b648742b206fb9ce5a6d97a1d1be67f2a2) |
 | ID de implementación de CodeDeploy | d-AMN62SHSM |
 | Nueva revisión de la tarea | blacklist-service-python:4 |
  
 **Hallazgos:**
+
+- El merge a main disparó el pipeline completo sin intervención manual: Source, Build y Deploy terminaron en verde.
+- Las pruebas pasaron y la imagen se publicó en ECR con la etiqueta 04315d4, el SHA corto del commit, lo que permite rastrear qué versión del código corre en cada despliegue.
+- CodeDeploy registró la revisión blacklist-service-python:4, levantó la tarea nueva en el grupo de destino green y, cuando superó el health check en /health, movió el 100 % del tráfico del listener HTTP:80.
+- La versión anterior siguió atendiendo hasta el cambio, así que no hubo interrupción del servicio. Cinco minutos después, CodeDeploy apagó la tarea anterior.
+- En el siguiente despliegue (d-SR9Y87HSM) el tráfico volvió al grupo 1: en cada despliegue exitoso los grupos blue y green se alternan.
  
 ### CAPTURA: Pipeline con Source, Build y Deploy en verde
 <img width="1758" height="862" alt="image" src="https://github.com/user-attachments/assets/959543bb-869e-406c-acf5-e59ad96e4911" />
@@ -381,15 +387,20 @@ aws deploy create-deployment-group \
  
 | Dato | Valor |
 |---|---|
-| Commit | f84c28e1  |
-| Cambio introducido | Modificación del nombre del contenedor en appspec.json, pasando de blacklist-app a blacklist-apx |
+| Commit | f84c28e1 |
+| Cambio introducido | `ContainerName` en `appspec.json`: de `blacklist-app` a `blacklist-apx` |
 | Execution ID del pipeline | becc6be2-0dda-435e-bb7f-d66a750577a7 |
-| Resultado del Build | Exitoso · PENDIENTE |
-| ID de implementación de CodeDeploy | d-J5EWQAJSM |
+| Resultado del Build | Exitoso · blacklist-service-build:54f38576-bd36-417b-b3c3-405988926bb4 |
+| ID de implementación de CodeDeploy | d-J5EWQAJSM (Error) |
 | Motivo del fallo | The ECS service cannot be updated due to an unexpected error: The container blacklist-apx does not exist in the task definition. (Service: AmazonECS; Status Code: 400; Error Code: InvalidParameterException; Request ID: 9031a966-0a90-42a1-b790-c19417c52cb8; Proxy: null). Check your ECS service status. |
-| Rollback | d-J5EWQAJSM, Realizado correctamente, de 1:50 a 1:57 a. m. Es la reversión automática que hizo CodeDeploy. |
+| Rollback | Ejecución `20d195be` (*Reversión*, disparada automáticamente por `AutomatedRollback` de `becc6be2`), que volvió a desplegar la versión anterior (commit `ae9101b1`) mediante la implementación `d-X67AGJJSM`, realizada correctamente de 1:50 a 1:57 a. m. |
  
 **Hallazgos:**
+
+- Las pruebas pasaron y la imagen f84c28e se publicó en ECR: la integración continua fue exitosa.
+- CodeDeploy rechazó el despliegue (d-J5EWQAJSM) porque el contenedor blacklist-apx no existe en la definición de tarea (InvalidParameterException).
+- El rollback automático configurado en el grupo de implementación creó la implementación d-X67AGJJSM, que dejó el servicio en la versión anterior.
+- El tráfico nunca se movió a la versión fallida y /health siguió respondiendo durante todo el proceso, así que el fallo no afectó a los usuarios.
  
 ### CAPTURA: Pipeline con Build en verde y Deploy en rojo
 <img width="2532" height="810" alt="image" src="https://github.com/user-attachments/assets/20fa6037-a053-4c62-8ee5-de5c762b14ff" />
@@ -399,6 +410,8 @@ aws deploy create-deployment-group \
 
 ### CAPTURA: /health respondiendo durante el fallo
 <img width="1009" height="160" alt="image" src="https://github.com/user-attachments/assets/21a69db3-31e7-4221-9fee-e05b7c9dc8e5" />
+
+
  
 ## 8. Hallazgos de la configuración
  
