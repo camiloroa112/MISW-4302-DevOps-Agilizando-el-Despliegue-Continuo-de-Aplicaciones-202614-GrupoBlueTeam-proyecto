@@ -411,7 +411,8 @@ aws deploy create-deployment-group \
 ### CAPTURA: /health respondiendo durante el fallo
 <img width="1009" height="160" alt="image" src="https://github.com/user-attachments/assets/21a69db3-31e7-4221-9fee-e05b7c9dc8e5" />
 
-
+### CAPTURA: Ejecución fallida (becc6be2) y su reversión automática (20d195be)
+<img width="2504" height="130" alt="image" src="https://github.com/user-attachments/assets/426d5be8-bfdb-4219-aa74-b616676657a9" />
  
 ## 8. Hallazgos de la configuración
  
