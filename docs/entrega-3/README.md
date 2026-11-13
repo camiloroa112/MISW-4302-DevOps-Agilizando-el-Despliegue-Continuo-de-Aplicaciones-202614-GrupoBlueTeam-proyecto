@@ -43,6 +43,7 @@ La sustentación en video la pueden encontrar en el siguiente link: [VIDEO](http
     - [CAPTURA: Pipeline con Build en verde y Deploy en rojo](#captura-pipeline-con-build-en-verde-y-deploy-en-rojo)
     - [CAPTURA: CodeDeploy → implementación fallida con el motivo y el rollback](#captura-codedeploy--implementación-fallida-con-el-motivo-y-el-rollback)
     - [CAPTURA: /health respondiendo durante el fallo](#captura-health-respondiendo-durante-el-fallo)
+    - [CAPTURA: Ejecución fallida (becc6be2) y su reversión automática (20d195be)](#captura-ejecución-fallida-becc6be2-y-su-reversión-automática-20d195be)
   - [8. Hallazgos de la configuración](#8-hallazgos-de-la-configuración)
 ---
  
@@ -319,9 +320,9 @@ aws deploy create-deployment-group \
  
 ### 7.1 CI fallido
  
-**Objetivo:** demostrar que, si una prueba falla, el pipeline se detiene en Build, no se publica imagen y no se despliega nada.
- 
-**Método:** se integró a `main` un cambio que rompe una prueba unitaria sin tocar el código de la aplicación (`test_create_returns_201` esperando `200` en lugar de `201`). Después se revirtió con un nuevo commit.
+**Objetivo:** demostrar que, si el despliegue falla, el pipeline lo detiene y **revierte** automáticamente a la versión anterior, sin afectar el servicio.
+
+**Método:** se integró a `main` un cambio en `appspec.json` que cambia el `ContainerName` a `blacklist-apx`, un contenedor que no existe en la definición de tarea, sin tocar el código ni las pruebas. Las pruebas pasan y la imagen se publica, pero CodeDeploy rechaza el despliegue. Después se revirtió con un nuevo commit.
  
 | Dato | Valor |
 |---|---|
