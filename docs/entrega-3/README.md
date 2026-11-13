@@ -1,9 +1,11 @@
 # Proyecto 1 · Entrega 3 — Entrega Continua (CD) sobre AWS Fargate
  
 **Microservicio de lista negra de emails · Grupo Blue Team**
-Curso MISW-4302 DevOps: Agilizando el Despliegue Continuo de Aplicaciones · Universidad de los Andes
- 
+MISW-4302 DevOps: Agilizando el Despliegue Continuo de Aplicaciones · Universidad de los Andes
+
 Documentación de la entrega: despliegue del microservicio en AWS Fargate, pipeline de integración y entrega continua (CodePipeline + CodeBuild + CodeDeploy con estrategia blue/green) y evidencias de las ejecuciones. Este documento se exporta como `Proyecto 1 entrega 3 – Documento.pdf`.
+
+La sustentación en video la pueden encontrar en el siguiente link: [VIDEO](https://youtu.be/MqRvh9nL1Zg)
  
 ---
  
@@ -31,8 +33,17 @@ Documentación de la entrega: despliegue del microservicio en AWS Fargate, pipel
     - [6.3 AWS CodePipeline](#63-aws-codepipeline)
   - [7. Evidencias de las ejecuciones](#7-evidencias-de-las-ejecuciones)
     - [7.1 CI fallido](#71-ci-fallido)
+    - [CAPTURA: pipeline con Build en rojo y Deploy sin ejecutar](#captura-pipeline-con-build-en-rojo-y-deploy-sin-ejecutar)
+    - [CAPTURA: log de CodeBuild con el bloque FAILURES y el resumen de pytest](#captura-log-de-codebuild-con-el-bloque-failures-y-el-resumen-de-pytest)
+    - [CAPTURA: post\_build con "Build is failing; skipping image push."](#captura-post_build-con-build-is-failing-skipping-image-push)
     - [7.2 CI exitoso y CD exitoso](#72-ci-exitoso-y-cd-exitoso)
+    - [CAPTURA: Pipeline con Source, Build y Deploy en verde](#captura-pipeline-con-source-build-y-deploy-en-verde)
+    - [CAPTURA: Desplazamiento de tráfico](#captura-desplazamiento-de-tráfico)
+    - [CAPTURA: ECR con la imagen etiquetada con el SHA del commit](#captura-ecr-con-la-imagen-etiquetada-con-el-sha-del-commit)
     - [7.3 CI exitoso y CD fallido](#73-ci-exitoso-y-cd-fallido)
+    - [CAPTURA: Pipeline con Build en verde y Deploy en rojo](#captura-pipeline-con-build-en-verde-y-deploy-en-rojo)
+    - [CAPTURA: CodeDeploy → implementación fallida con el motivo y el rollback](#captura-codedeploy--implementación-fallida-con-el-motivo-y-el-rollback)
+    - [CAPTURA: /health respondiendo durante el fallo](#captura-health-respondiendo-durante-el-fallo)
   - [8. Hallazgos de la configuración](#8-hallazgos-de-la-configuración)
 ---
  
