@@ -1,5 +1,5 @@
 # Base image with the same Python version used locally
-FROM python:3.12-slim
+FROM public.ecr.aws/docker/library/python:3.12-slim
 
 # Copy the uv binary from its official image (pin the version you use locally: uv --version)
 COPY --from=ghcr.io/astral-sh/uv:0.9 /uv /bin/uv
