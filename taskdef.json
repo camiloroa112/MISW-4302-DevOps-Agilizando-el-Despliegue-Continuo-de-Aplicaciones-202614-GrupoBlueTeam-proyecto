@@ -14,13 +14,15 @@
         {
           "containerPort": 5000,
           "hostPort": 5000,
-          "protocol": "tcp"
+          "protocol": "tcp",
+          "name": "blacklist-app-5000-tcp",
+          "appProtocol": "http"
         }
       ],
       "environment": [
-        { "name": "DB_HOST", "value": "REEMPLAZAR_CON_ENDPOINT_RDS" },
-        { "name": "DB_PORT", "value": "5432" },
         { "name": "DB_NAME", "value": "blacklist" },
+        { "name": "DB_HOST", "value": "blacklist-db.cgx6y0o4slaf.us-east-1.rds.amazonaws.com" },
+        { "name": "DB_PORT", "value": "5432" },
         { "name": "DB_USER", "value": "postgres" }
       ],
       "secrets": [
@@ -30,7 +32,8 @@
       "logConfiguration": {
         "logDriver": "awslogs",
         "options": {
-          "awslogs-group": "/ecs/blacklist-task",
+          "awslogs-group": "/ecs/blacklist-service-python",
+          "awslogs-create-group": "true",
           "awslogs-region": "us-east-1",
           "awslogs-stream-prefix": "ecs"
         }
