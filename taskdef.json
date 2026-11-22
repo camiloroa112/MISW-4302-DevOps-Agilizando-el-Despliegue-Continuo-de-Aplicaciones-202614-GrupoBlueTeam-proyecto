@@ -1,5 +1,5 @@
 {
-  "family": "blacklist-service-python",
+  "family": "backlist-app-task",
   "executionRoleArn": "arn:aws:iam::577784165706:role/ecsTaskExecutionRole",
   "networkMode": "awsvpc",
   "requiresCompatibilities": ["FARGATE"],
@@ -32,7 +32,7 @@
       "logConfiguration": {
         "logDriver": "awslogs",
         "options": {
-          "awslogs-group": "/ecs/backlist-app-task-service",
+          "awslogs-group": "/ecs/backlist-app-task",
           "awslogs-create-group": "true",
           "awslogs-region": "us-east-2",
           "awslogs-stream-prefix": "ecs"
