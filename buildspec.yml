@@ -19,11 +19,11 @@ env:
     # Pin the uv version used locally so CI and local builds match.
     UV_VERSION: "0.9.5"
     # AWS account and region for the ECR repository where the Docker image is pushed.
-    AWS_ACCOUNT_ID: "773658095475"
+    AWS_ACCOUNT_ID: "577784165706"
     # AWS region for the ECR repository where the Docker image is pushed.
-    AWS_REGION: "us-east-1"
+    AWS_REGION: "us-east-2"
     # Name of the ECR repository where the Docker image is pushed.
-    IMAGE_REPO: "blacklist-service"
+    IMAGE_REPO: "blacklist-app"
     # Name of the Docker container in the Elastic Beanstalk environment.
     CONTAINER_NAME: "blacklist-app"
 

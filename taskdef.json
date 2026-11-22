@@ -1,6 +1,6 @@
 {
   "family": "blacklist-service-python",
-  "executionRoleArn": "arn:aws:iam::773658095475:role/ecsTaskExecutionRole",
+  "executionRoleArn": "arn:aws:iam::577784165706:role/ecsTaskExecutionRole",
   "networkMode": "awsvpc",
   "requiresCompatibilities": ["FARGATE"],
   "cpu": "512",
@@ -21,20 +21,20 @@
       ],
       "environment": [
         { "name": "DB_NAME", "value": "blacklist" },
-        { "name": "DB_HOST", "value": "blacklist-db.cgx6y0o4slaf.us-east-1.rds.amazonaws.com" },
+        { "name": "DB_HOST", "value": "blacklist-db.ch4mgeqewtzy.us-east-2.rds.amazonaws.com" },
         { "name": "DB_PORT", "value": "5432" },
         { "name": "DB_USER", "value": "postgres" }
       ],
       "secrets": [
-        { "name": "DB_PASSWORD", "valueFrom": "arn:aws:ssm:us-east-1:773658095475:parameter/blacklist/DB_PASSWORD" },
-        { "name": "JWT_SECRET_KEY", "valueFrom": "arn:aws:ssm:us-east-1:773658095475:parameter/blacklist/JWT_SECRET_KEY" }
+        { "name": "DB_PASSWORD", "valueFrom": "arn:aws:ssm:us-east-2:577784165706:parameter/blacklist/DB_PASSWORD" },
+        { "name": "JWT_SECRET_KEY", "valueFrom": "arn:aws:ssm:us-east-2:577784165706:parameter/blacklist/JWT_SECRET_KEY" }
       ],
       "logConfiguration": {
         "logDriver": "awslogs",
         "options": {
-          "awslogs-group": "/ecs/blacklist-service-python",
+          "awslogs-group": "/ecs/backlist-app-task-service",
           "awslogs-create-group": "true",
-          "awslogs-region": "us-east-1",
+          "awslogs-region": "us-east-2",
           "awslogs-stream-prefix": "ecs"
         }
       }
