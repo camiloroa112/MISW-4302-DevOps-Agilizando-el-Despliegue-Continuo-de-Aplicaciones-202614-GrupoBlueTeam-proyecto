@@ -28,4 +28,4 @@ USER appuser
 EXPOSE 5000
 
 # One worker with threads, so create_all() runs once per instance instead of once per worker
-CMD ["/app/.venv/bin/gunicorn", "--bind", "0.0.0.0:5000", "--workers", "1", "--threads", "4", "application:application"]
+CMD ["/app/.venv/bin/newrelic-admin", "run-program", "/app/.venv/bin/gunicorn", "--bind", "0.0.0.0:5000", "--workers", "1", "--threads", "4", "application:application"]
