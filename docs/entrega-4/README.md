@@ -358,18 +358,21 @@ Apdex = (satisfechas + tolerables / 2) / total.
 
 | Fuente | Valor |
 |---|---|
-| New Relic, tasa de error promedio | 1,87 % (ejecución 1) y 1,75 % (ejecución 2) |
+| New Relic, tasa de error promedio | 1,87 % (ejecución 1) y 1,76 % (ejecución 2) |
+| k6, requests sin token (401) en la ejecución 2 | 716 de 40 557 = 1,765 % |
 | New Relic, tasa de error en el pico | ≈ 2–2,5 % |
 | New Relic, tasa de error de `BlacklistQueryResource` | 4,38 % |
 | k6, fallos inesperados | 5 de 40 419 (ejecución 1) y 6 de 40 557 (ejecución 2), 0,01 % en ambas |
 
 **Hallazgos:**
 
-- La tasa de ≈ 2 % coincide con la proporción de solicitudes **sin token (401)** que genera el script (10 % de las iteraciones ≈ 1 de cada 52 requests).
+- La tasa de ≈ 2 % coincide con la proporción de solicitudes **sin token (401)** que genera el script (10 % de las iteraciones ≈ 1 de cada 52 requests). En la ejecución 2 la coincidencia es exacta: k6 envió **716 requests sin token** (715 ✓ + 1 ✗ en el check `no token 401`) de **40 557** en total, es decir **716 / 40 557 = 1,765 %**, frente al **1,76 %** que reporta New Relic.
+- **La tasa de error no sube con la carga.** En la gráfica de errores, la tasa se mantiene en una meseta de ≈ 1,5–2 % durante toda la prueba, tanto con 10 como con 50 usuarios virtuales. El único pico (≈ 2,6 %) está en el primer minuto, cuando hay pocos requests y unos cuantos 401 pesan más en el porcentaje. Si los errores vinieran de saturación, se dispararían en el pico de carga (5:21–5:26 UTC), cuando el tiempo de respuesta sí se multiplica. Como la tasa no cambia, los errores dependen del diseño de la prueba y no del estrés sobre el servicio.
 - El desglose por transacción lo confirma: **todos los errores están en `BlacklistQueryResource` (4,38 %)**, que es donde el script envía el request sin token. Ese recurso recibe ≈ 2,1 requests por iteración (consulta existente, consulta inexistente y el 10 % sin token), y 0,1 / 2,1 ≈ 4,8 %, cercano al 4,38 % medido.
 - **Errors inbox** muestra un único grupo de error sin resolver: **`flask_jwt_extended.exceptions.NoAuthorizationError` – "Missing Authorization Header"**. Sus atributos lo identifican sin ambigüedad: `http.statusCode = 401`, `request.method = GET`, `request.uri = /blacklists/stress.…@example.com`, `request.headers.userAgent = Grafana k6/2.4.0` y transacción `blacklist_query:BlacklistQueryResource`. El stack trace llega hasta `flask_jwt_extended/view_decorators.py` (`_decode_jwt_from_request`). La gráfica de ocurrencias muestra dos bloques, uno por cada ejecución de la prueba. Errors inbox guarda una muestra de las ocurrencias, mientras que la tasa de error se calcula sobre todas las transacciones.
 - `BlacklistCreateResource` tiene **0 % de error** aunque devuelve 409 en cada iteración y 400 en el 10 %. Son respuestas controladas de la API, devueltas como respuesta normal y no como excepción, así que el agente no las cuenta como error.
 - Los **fallos inesperados** de k6 (5 y 6 por ejecución) se repartieron entre `health`, `create`, `query`, `query missing`, `duplicate` y `no token`, así que no se concentran en un endpoint. Ninguno aparece como error de la aplicación en Errors inbox, donde el único grupo es el 401. Por eso, lo más probable es que ocurrieran **antes de llegar al contenedor**: cortes de conexión o respuestas del ALB/red durante el pico, y no excepciones del código. Con 6 casos de ≈ 40 000 (0,01 %), su impacto es despreciable. Para confirmarlo habría que revisar las métricas `HTTPCode_ELB_5XX` y `TargetConnectionErrorCount` del ALB en CloudWatch.
+- **El número de errores sí crece con la carga, pero en la misma proporción que el tráfico.** En *Errors inbox → Errors overview*, el conteo de `NoAuthorizationError` sube de ≈ 40 errores por minuto con 10 usuarios virtuales a ≈ 85–90 por minuto en el pico de 50, mientras que la tasa de error se mantiene en ≈ 1,5–2 %. Es decir, los errores aumentan en términos absolutos solo porque hay más requests, no porque el servicio falle más. Además, la leyenda confirma que hay un **único grupo de error** durante toda la prueba.
 - Fuera de la prueba, la tasa de error vuelve a 0 %.
 
 <p align="center">
@@ -378,8 +381,13 @@ Apdex = (satisfechas + tolerables / 2) / total.
 </p>
 
 <p align="center">
+     <img width="100%" alt="Errors inbox → Errors overview: conteo frente a tasa de error" src="https://github.com/user-attachments/assets/3a8cc52f-9235-4a30-9bfb-5f505039f1f9" />
+  <br><em>Figura 13. Errors inbox → Errors overview: el conteo de errores crece con la carga mientras la tasa se mantiene estable</em>
+</p>
+
+<p align="center">
   <img width="55%" alt="Errors inbox" src="https://github.com/user-attachments/assets/ab8d054c-55ab-4e35-acdd-806a8e6ebcbb" />
-  <br><em>Figura 13. Errors inbox</em>
+  <br><em>Figura 14. Errors inbox</em>
 </p>
 
 ### 6.4 Alertas (10 %)
@@ -411,17 +419,17 @@ Se creó la política **`blacklist-cloud-policy`** (agrupación: *One issue per 
 
 <p align="center">
   <img width="100%" alt="Alert Conditions de blacklist-cloud-policy" src="https://github.com/user-attachments/assets/f1ce8642-095a-4998-9807-e966ad303182" />
-  <br><em>Figura 14. Alert Conditions de blacklist-cloud-policy</em>
+  <br><em>Figura 15. Alert Conditions de blacklist-cloud-policy</em>
 </p>
 
 <p align="center">
   <img width="100%" alt="Issues & Activity con alertas en Active" src="https://github.com/user-attachments/assets/ec4d4934-162b-4c29-8582-ce675481fb78" />
-  <br><em>Figura 15. Issues & Activity (filtro Active): sin incidencias abiertas al terminar la prueba</em>
+  <br><em>Figura 16. Issues & Activity (filtro Active): sin incidencias abiertas al terminar la prueba</em>
 </p>
 
 <p align="center">
   <img width="100%" alt="Issues & Activity con alertas cerradas" src="https://github.com/user-attachments/assets/6d4144e0-7fc5-42ac-ae37-f5a6c7f2611c" />
-  <br><em>Figura 16. Issues & Activity con alertas cerradas</em>
+  <br><em>Figura 17. Issues & Activity con alertas cerradas</em>
 </p>
 
 ---
