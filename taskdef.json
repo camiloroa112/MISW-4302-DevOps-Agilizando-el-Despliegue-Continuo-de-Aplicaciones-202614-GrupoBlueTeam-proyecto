@@ -1,10 +1,14 @@
 {
   "family": "blacklist-service-python",
-  "executionRoleArn": "arn:aws:iam::773658095475:role/ecsTaskExecutionRole",
   "networkMode": "awsvpc",
   "requiresCompatibilities": ["FARGATE"],
   "cpu": "512",
   "memory": "1024",
+  "executionRoleArn": "arn:aws:iam::773658095475:role/ecsTaskExecutionRole",
+  "runtimePlatform": {
+    "cpuArchitecture": "X86_64",
+    "operatingSystemFamily": "LINUX"
+  },
   "containerDefinitions": [
     {
       "name": "blacklist-app",
@@ -14,26 +18,27 @@
         {
           "containerPort": 5000,
           "hostPort": 5000,
-          "protocol": "tcp",
-          "name": "blacklist-app-5000-tcp",
-          "appProtocol": "http"
+          "protocol": "tcp"
         }
       ],
       "environment": [
-        { "name": "DB_NAME", "value": "blacklist" },
         { "name": "DB_HOST", "value": "blacklist-db.cgx6y0o4slaf.us-east-1.rds.amazonaws.com" },
         { "name": "DB_PORT", "value": "5432" },
-        { "name": "DB_USER", "value": "postgres" }
+        { "name": "DB_NAME", "value": "blacklist" },
+        { "name": "DB_USER", "value": "postgres" },
+        { "name": "NEW_RELIC_APP_NAME", "value": "blacklist-service-cloud" },
+        { "name": "NEW_RELIC_DISTRIBUTED_TRACING_ENABLED", "value": "true" },
+        { "name": "NEW_RELIC_APPLICATION_LOGGING_FORWARDING_ENABLED", "value": "true" }
       ],
       "secrets": [
         { "name": "DB_PASSWORD", "valueFrom": "arn:aws:ssm:us-east-1:773658095475:parameter/blacklist/DB_PASSWORD" },
-        { "name": "JWT_SECRET_KEY", "valueFrom": "arn:aws:ssm:us-east-1:773658095475:parameter/blacklist/JWT_SECRET_KEY" }
+        { "name": "JWT_SECRET_KEY", "valueFrom": "arn:aws:ssm:us-east-1:773658095475:parameter/blacklist/JWT_SECRET_KEY" },
+        { "name": "NEW_RELIC_LICENSE_KEY", "valueFrom": "arn:aws:ssm:us-east-1:773658095475:parameter/blacklist/NEW_RELIC_LICENSE_KEY" }
       ],
       "logConfiguration": {
         "logDriver": "awslogs",
         "options": {
           "awslogs-group": "/ecs/blacklist-service-python",
-          "awslogs-create-group": "true",
           "awslogs-region": "us-east-1",
           "awslogs-stream-prefix": "ecs"
         }
