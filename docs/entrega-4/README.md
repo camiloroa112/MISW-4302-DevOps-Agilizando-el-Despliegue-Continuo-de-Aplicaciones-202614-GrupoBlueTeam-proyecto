@@ -326,9 +326,14 @@ Se creó la política **`blacklist-cloud-policy`** (agrupación: *One issue per 
 3. **Segunda ejecución (umbrales calibrados):** *[Completar: qué alertas pasaron a Active, a qué hora (minuto de la prueba) y cuándo se cerraron al terminar la carga]*.
 4. **Lección:** un umbral solo sirve si está basado en el comportamiento medido del servicio. La alerta de p95 en servidor no detecta la latencia de red que percibe el usuario. Para eso se recomienda complementar con un monitor sintético de New Relic desde la región de los usuarios.
 
-> 📷 *[Pantallazo: Alert Conditions de blacklist-cloud-policy]*
-> 📷 *[Pantallazo: Issues & Activity con alertas en Active]*
-> 📷 *[Pantallazo: Issues & Activity con alertas cerradas]*
+#### Alert Conditions de blacklist-cloud-policy
+<img width="2262" height="668" alt="Alert Conditions de blacklist-cloud-policy" src="https://github.com/user-attachments/assets/f1ce8642-095a-4998-9807-e966ad303182" />
+
+#### Issues & Activity con alertas en Active
+<img width="2244" height="788" alt="Issues & Activity con alertas en Active" src="https://github.com/user-attachments/assets/ec4d4934-162b-4c29-8582-ce675481fb78" />
+
+#### Issues & Activity con alertas cerradas
+<img width="2248" height="788" alt="Issues & Activity con alertas cerradas" src="https://github.com/user-attachments/assets/6d4144e0-7fc5-42ac-ae37-f5a6c7f2611c" />
 
 ---
 
