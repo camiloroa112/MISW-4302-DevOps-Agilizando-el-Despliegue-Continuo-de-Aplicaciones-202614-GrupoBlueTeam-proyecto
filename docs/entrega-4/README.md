@@ -58,8 +58,10 @@ Se creó una cuenta gratuita en New Relic. Para el agente se usa la llave de tip
 - En local se carga desde el archivo `.env`, que está en `.gitignore`.
 - En la nube se lee desde SSM Parameter Store.
 
-#### Página API Keys con la llave INGEST - LICENSE, valor oculto
-<img width="2553" height="812" alt="Página API Keys con la llave INGEST - LICENSE, valor oculto" src="https://github.com/user-attachments/assets/4f91e26d-4d00-4f27-960a-f64ec76c7ec0" />
+<p align="center">
+  <img width="100%" alt="Página API Keys con la llave INGEST - LICENSE, valor oculto" src="https://github.com/user-attachments/assets/4f91e26d-4d00-4f27-960a-f64ec76c7ec0" />
+  <br><em>Figura 1. Página API Keys con la llave INGEST - LICENSE, valor oculto</em>
+</p>
 
 ### 3.2 Configuración en el repositorio y verificación en desarrollo (30 %)
 
@@ -116,8 +118,10 @@ El servicio **`blacklist-service-local`** apareció en **APM & Services** con da
 | Throughput | 15,32 rpm promedio (pico ≈ 550 rpm durante k6) |
 | Error rate | 1,70 % promedio (pico durante las pruebas manuales de 409, 400 y 401) |
 
-#### APM & Services → blacklist-service-local → Summary
-<img width="2553" height="1204" alt="APM & Services → blacklist-service-local → Summary" src="https://github.com/user-attachments/assets/95966974-f590-4a00-a5cc-e190c3d03a41" />
+<p align="center">
+  <img width="100%" alt="APM & Services → blacklist-service-local → Summary" src="https://github.com/user-attachments/assets/95966974-f590-4a00-a5cc-e190c3d03a41" />
+  <br><em>Figura 2. APM & Services → blacklist-service-local → Summary</em>
+</p>
 
 #### Resumen de k6 local
 
@@ -163,17 +167,25 @@ El rol `ecsTaskExecutionRole` tiene la política en línea `ReadBlacklistSecrets
 
 Verificación: `GET http://<ALB>/health` → `{"status": "ok"}`. El servicio **`blacklist-service-cloud`** reporta en New Relic APM.
 
-#### CodePipeline con las 3 etapas en verde
-<img width="2540" height="1078" alt="CodePipeline con las 3 etapas en verde" src="https://github.com/user-attachments/assets/75eac681-f234-4ba2-aa0b-52ad1a3a089a" />
+<p align="center">
+  <img width="100%" alt="CodePipeline con las 3 etapas en verde" src="https://github.com/user-attachments/assets/75eac681-f234-4ba2-aa0b-52ad1a3a089a" />
+  <br><em>Figura 3. CodePipeline con las 3 etapas en verde</em>
+</p>
 
-#### CodeBuild → Informes de pytest
-<img width="858" height="521" alt="CodeBuild → Informes de pytest" src="https://github.com/user-attachments/assets/6bf8c6bf-6db2-485a-9817-d5377e6f6850" />
+<p align="center">
+  <img width="85%" alt="CodeBuild → Informes de pytest" src="https://github.com/user-attachments/assets/6bf8c6bf-6db2-485a-9817-d5377e6f6850" />
+  <br><em>Figura 4. CodeBuild → Informes de pytest</em>
+</p>
 
-#### CodeDeploy → implementación blue/green completada
-<img width="1472" height="1341" alt="CodeDeploy → implementación blue/green completada" src="https://github.com/user-attachments/assets/c140da17-8e3c-4776-8dc9-70558c69edc3" />
+<p align="center">
+  <img width="80%" alt="CodeDeploy → implementación blue/green completada" src="https://github.com/user-attachments/assets/c140da17-8e3c-4776-8dc9-70558c69edc3" />
+  <br><em>Figura 5. CodeDeploy → implementación blue/green completada</em>
+</p>
 
-#### APM & Services → blacklist-service-cloud
-<img width="2260" height="1137" alt="APM & Services → blacklist-service-cloud" src="https://github.com/user-attachments/assets/01bfd563-6b3d-4c32-b910-9bbcf5290732" />
+<p align="center">
+  <img width="100%" alt="APM & Services → blacklist-service-cloud" src="https://github.com/user-attachments/assets/01bfd563-6b3d-4c32-b910-9bbcf5290732" />
+  <br><em>Figura 6. APM & Services → blacklist-service-cloud</em>
+</p>
 
 ---
 
@@ -243,8 +255,10 @@ Se hicieron dos ejecuciones idénticas de 10 minutos. La primera usó los umbral
 
 Ambos thresholds se cumplieron en las dos ejecuciones. Los resultados son prácticamente iguales (diferencias menores al 1 %), lo que muestra que el comportamiento del servicio bajo esta carga es **reproducible**. Los fallos inesperados se mantienen en el mismo orden (5–7 de ≈ 40 000) y se reparten entre distintos endpoints (`create`, `query`, `duplicate`, `no token`), así que no se concentran en una operación específica.
 
-#### Resumen de k6 en la nube (ejecución 2)
-<img width="1330" height="1005" alt="Resumen de k6 en la nube" src="https://github.com/user-attachments/assets/92b876ba-5f8d-40a2-8d9d-3b305e64980d" />
+<p align="center">
+  <img width="80%" alt="Resumen de k6 en la nube" src="https://github.com/user-attachments/assets/92b876ba-5f8d-40a2-8d9d-3b305e64980d" />
+  <br><em>Figura 7. Resumen de k6 en la nube (ejecución 2)</em>
+</p>
 
 ---
 
@@ -290,14 +304,20 @@ Ambos thresholds se cumplieron en las dos ejecuciones. Los resultados son práct
    Es una oportunidad de optimización: validar el duplicado antes del `INSERT` y evitar transacciones innecesarias en las lecturas.
 6. **Encolamiento en el pico.** La mediana de k6 (≈ 220 ms) queda por encima del promedio (≈ 207 ms), y el p95 llega a 362 ms. Esto indica que, con 50 usuarios, la tarea (1 worker de gunicorn con 4 hilos sobre 0,5 vCPU) empieza a encolar solicitudes.
 
-#### Summary → Web transactions time
-<img width="1284" height="508" alt="Summary → Web transactions time" src="https://github.com/user-attachments/assets/0a67dc52-90b0-431b-87f1-2bbda931bd25" />
+<p align="center">
+  <img width="95%" alt="Summary → Web transactions time" src="https://github.com/user-attachments/assets/0a67dc52-90b0-431b-87f1-2bbda931bd25" />
+  <br><em>Figura 8. Summary → Web transactions time</em>
+</p>
 
-#### Transactions → endpoints ordenados por tiempo
-<img width="1890" height="366" alt="Transactions → endpoints ordenados por tiempo" src="https://github.com/user-attachments/assets/04b7e41f-4efd-4cb6-80b0-ec701311e229" />
+<p align="center">
+  <img width="100%" alt="Transactions → endpoints ordenados por tiempo" src="https://github.com/user-attachments/assets/04b7e41f-4efd-4cb6-80b0-ec701311e229" />
+  <br><em>Figura 9. Transactions → endpoints ordenados por tiempo</em>
+</p>
 
-#### Databases → operaciones de Postgres
-<img width="588" height="376" alt="Databases → operaciones de Postgres" src="https://github.com/user-attachments/assets/f5fa649f-4471-453b-a35e-a019294dcd98" />
+<p align="center">
+  <img width="55%" alt="Databases → operaciones de Postgres" src="https://github.com/user-attachments/assets/f5fa649f-4471-453b-a35e-a019294dcd98" />
+  <br><em>Figura 10. Databases → operaciones de Postgres</em>
+</p>
 
 **Recomendaciones:**
 
@@ -329,8 +349,10 @@ Apdex = (satisfechas + tolerables / 2) / total.
 - En local el Apdex bajó a 0,82 solo durante los primeros minutos, porque la muestra era pequeña y tenía una proporción alta de errores provocados a propósito. En la ventana completa fue de 0,98.
 - Por la diferencia de la sección 6.1, el Apdex del servidor no refleja la experiencia del usuario final: un usuario lejano de us-east-1 percibe ≈ 200–360 ms.
 
-#### Summary → Apdex score
-<img width="629" height="486" alt="Summary → Apdex score" src="https://github.com/user-attachments/assets/f831b789-a054-486b-af45-b52a5e19544d" />
+<p align="center">
+  <img width="60%" alt="Summary → Apdex score" src="https://github.com/user-attachments/assets/f831b789-a054-486b-af45-b52a5e19544d" />
+  <br><em>Figura 11. Summary → Apdex score</em>
+</p>
 
 ### 6.3 Errores (10 %)
 
@@ -350,11 +372,15 @@ Apdex = (satisfechas + tolerables / 2) / total.
 - Los **fallos inesperados** de k6 (5 y 6 por ejecución) se repartieron entre `health`, `create`, `query`, `query missing`, `duplicate` y `no token`, así que no se concentran en un endpoint. Ninguno aparece como error de la aplicación en Errors inbox, donde el único grupo es el 401. Por eso, lo más probable es que ocurrieran **antes de llegar al contenedor**: cortes de conexión o respuestas del ALB/red durante el pico, y no excepciones del código. Con 6 casos de ≈ 40 000 (0,01 %), su impacto es despreciable. Para confirmarlo habría que revisar las métricas `HTTPCode_ELB_5XX` y `TargetConnectionErrorCount` del ALB en CloudWatch.
 - Fuera de la prueba, la tasa de error vuelve a 0 %.
 
-#### Summary → Errors
-<img width="946" height="328" alt="Summary → Errors" src="https://github.com/user-attachments/assets/44e07c49-dc60-4079-a787-cbd5d0fe69ac" />
+<p align="center">
+  <img width="80%" alt="Summary → Errors" src="https://github.com/user-attachments/assets/44e07c49-dc60-4079-a787-cbd5d0fe69ac" />
+  <br><em>Figura 12. Summary → Errors</em>
+</p>
 
-#### Errors inbox
-<img width="977" height="1610" alt="Errors inbox" src="https://github.com/user-attachments/assets/ab8d054c-55ab-4e35-acdd-806a8e6ebcbb" />
+<p align="center">
+  <img width="55%" alt="Errors inbox" src="https://github.com/user-attachments/assets/ab8d054c-55ab-4e35-acdd-806a8e6ebcbb" />
+  <br><em>Figura 13. Errors inbox</em>
+</p>
 
 ### 6.4 Alertas (10 %)
 
@@ -383,14 +409,20 @@ Se creó la política **`blacklist-cloud-policy`** (agrupación: *One issue per 
    Las bandas rojas de *Critical alerts* en las gráficas de New Relic (≈ 5:21–5:32) coinciden con la rampa y el pico de 50 usuarios virtuales, y el *Activity stream* del servicio registra los eventos **Critical Issue Activated** y **Critical Issue Closed**. Las dos incidencias se **cerraron solas** cuando la carga bajó y las métricas volvieron a la línea base. Esto demuestra el ciclo completo: detección, incidencia abierta y resolución automática.
 4. **Lección:** un umbral solo sirve si está basado en el comportamiento medido del servicio. La alerta de p95 en servidor no detecta la latencia de red que percibe el usuario. Para eso se recomienda complementar con un monitor sintético de New Relic desde la región de los usuarios.
 
-#### Alert Conditions de blacklist-cloud-policy
-<img width="2262" height="668" alt="Alert Conditions de blacklist-cloud-policy" src="https://github.com/user-attachments/assets/f1ce8642-095a-4998-9807-e966ad303182" />
+<p align="center">
+  <img width="100%" alt="Alert Conditions de blacklist-cloud-policy" src="https://github.com/user-attachments/assets/f1ce8642-095a-4998-9807-e966ad303182" />
+  <br><em>Figura 14. Alert Conditions de blacklist-cloud-policy</em>
+</p>
 
-#### Issues & Activity con alertas en Active
-<img width="2244" height="788" alt="Issues & Activity con alertas en Active" src="https://github.com/user-attachments/assets/ec4d4934-162b-4c29-8582-ce675481fb78" />
+<p align="center">
+  <img width="100%" alt="Issues & Activity con alertas en Active" src="https://github.com/user-attachments/assets/ec4d4934-162b-4c29-8582-ce675481fb78" />
+  <br><em>Figura 15. Issues & Activity (filtro Active): sin incidencias abiertas al terminar la prueba</em>
+</p>
 
-#### Issues & Activity con alertas cerradas
-<img width="2248" height="788" alt="Issues & Activity con alertas cerradas" src="https://github.com/user-attachments/assets/6d4144e0-7fc5-42ac-ae37-f5a6c7f2611c" />
+<p align="center">
+  <img width="100%" alt="Issues & Activity con alertas cerradas" src="https://github.com/user-attachments/assets/6d4144e0-7fc5-42ac-ae37-f5a6c7f2611c" />
+  <br><em>Figura 16. Issues & Activity con alertas cerradas</em>
+</p>
 
 ---
 
