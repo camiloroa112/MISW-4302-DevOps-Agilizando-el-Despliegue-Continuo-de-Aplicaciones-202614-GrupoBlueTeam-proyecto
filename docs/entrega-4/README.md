@@ -4,7 +4,7 @@
 **Grupo:** Blue Team
 **Servicio:** Microservicio de lista negra global de emails (`blacklist-service`)
 
-La sustentación en video la pueden encontrar en el siguiente link: [VIDEO](URL_DEL_VIDEO)
+La sustentación en video la pueden encontrar en el siguiente link: [Video](https://youtu.be/BE9xnpubE4o)
 
 ---
 
