@@ -4,6 +4,8 @@
 **Grupo:** Blue Team
 **Servicio:** Microservicio de lista negra global de emails (`blacklist-service`)
 
+La sustentación en video la pueden encontrar en el siguiente link: [VIDEO](URL_DEL_VIDEO)
+
 ---
 
 ## 1. Objetivo
@@ -51,7 +53,7 @@ RDS PostgreSQL 16 (db.t3.micro)      New Relic APM
 
 ### 3.1 Creación de la cuenta (5 %)
 
-Se creó una cuenta gratuita en New Relic. Para el agente se usa la llave de tipo **INGEST - LICENSE**, que se generó desde **API Keys → Create a key**. La llave **no se versiona** en el repositorio:
+Se creó una cuenta gratuita en New Relic. Para el agente se usa la llave de tipo **INGEST - LICENSE**, que se generó desde **API Keys → Create a key** con el nombre `blacklist-service`. La llave **no se versiona** en el repositorio:
 
 - En local se carga desde el archivo `.env`, que está en `.gitignore`.
 - En la nube se lee desde SSM Parameter Store.
@@ -105,13 +107,28 @@ Se generó tráfico con Postman (201, 200, 409, 400 y 401) y con una prueba cort
 | p(95) | 16,55 ms |
 | `http_req_failed` | 0 % |
 
-El servicio **`blacklist-service-local`** apareció en **APM & Services** con datos de tiempo de respuesta, desglosados entre Python y Postgres, además de Apdex, throughput y errores.
+El servicio **`blacklist-service-local`** apareció en **APM & Services** con datos de tiempo de respuesta, desglosados entre Python y Postgres, además de Apdex, throughput y errores:
+
+| Métrica New Relic (local, Nov 22 20:30–21:20 UTC) | Valor |
+|---|---|
+| Tiempo de transacción web promedio | 5,36 ms (pico de 22 ms en la primera conexión a Postgres) |
+| Apdex (T = 0,5 s) | 0,98 |
+| Throughput | 15,32 rpm promedio (pico ≈ 550 rpm durante k6) |
+| Error rate | 1,70 % promedio (pico durante las pruebas manuales de 409, 400 y 401) |
 
 #### APM & Services → blacklist-service-local → Summary
 <img width="2553" height="1204" alt="APM & Services → blacklist-service-local → Summary" src="https://github.com/user-attachments/assets/95966974-f590-4a00-a5cc-e190c3d03a41" />
 
 #### Resumen de k6 local
-<img width="1330" height="1005" alt="Resumen de k6 local" src="https://github.com/user-attachments/assets/92b876ba-5f8d-40a2-8d9d-3b305e64980d" />
+
+```text
+checks_succeeded...: 100.00% 750 out of 750
+✓ health 200  ✓ create 201  ✓ query 200  ✓ query missing 200
+✓ duplicate 409  ✓ invalid 400  ✓ no token 401
+http_req_duration..: avg=9.02ms min=774.34µs med=8.29ms max=87.47ms p(90)=14.6ms p(95)=16.55ms
+http_req_failed....: 0.00%  0 out of 750
+http_reqs..........: 750    24.681467/s
+```
 
 ### 3.3 Despliegue en la nube con el pipeline de CI/CD y verificación (15 %)
 
@@ -139,7 +156,10 @@ El rol `ecsTaskExecutionRole` tiene la política en línea `ReadBlacklistSecrets
 2. **Build (CodeBuild):** `uv sync` → `uv lock --locked` → `pytest` → `docker build` → push a ECR con el tag del commit → genera `imageDetail.json`, `appspec.json` y `taskdef.json`.
 3. **Deploy (CodeDeploy blue/green):** registra una nueva revisión de la definición de tarea, levanta las tareas en el grupo de destino alterno, mueve el 100 % del tráfico (`ECSAllAtOnce`) y termina la versión anterior a los 5 minutos. Tiene rollback automático si falla.
 
-Ejecución: `c5a959e6-dbb1-4e90-8964-5d94655fad8d`. Etapas **Source**, **Build** y **Deploy** exitosas.
+**Ejecución evidenciada:** `7c31ef7c-7efa-4199-a13d-3014789099e9`, disparada automáticamente por el push a `main` del commit `c6763be4` (*Merge pull request #35 from camiloroa112/feature/new-relic-configuration*). Las etapas **Source**, **Build** y **Deploy** terminaron con éxito:
+
+- **Build:** 23 pruebas unitarias de pytest aprobadas en 0,48 s, y reporte JUnit publicado en CodeBuild.
+- **Deploy:** implementación de CodeDeploy `d-K4HCGD2ZM` (`blacklist-app` / `blacklist-dg`, `CodeDeployDefault.ECSAllAtOnce`). Pasó por los 4 pasos (crear el conjunto de tareas de sustitución → redirigir el 100 % del tráfico → esperar → terminar el conjunto original). Todos los eventos del ciclo de vida (`BeforeInstall` … `AfterAllowTraffic`) terminaron bien; `Install` tomó 1 min 42 s.
 
 Verificación: `GET http://<ALB>/health` → `{"status": "ok"}`. El servicio **`blacklist-service-cloud`** reporta en New Relic APM.
 
@@ -223,7 +243,8 @@ Se hicieron dos ejecuciones idénticas de 10 minutos. La primera usó los umbral
 
 Ambos thresholds se cumplieron en las dos ejecuciones. Los resultados son prácticamente iguales (diferencias menores al 1 %), lo que muestra que el comportamiento del servicio bajo esta carga es **reproducible**. Los fallos inesperados se mantienen en el mismo orden (5–7 de ≈ 40 000) y se reparten entre distintos endpoints (`create`, `query`, `duplicate`, `no token`), así que no se concentran en una operación específica.
 
-> 📷 *[Pantallazo: resumen de k6 en la nube]*
+#### Resumen de k6 en la nube (ejecución 2)
+<img width="1330" height="1005" alt="Resumen de k6 en la nube" src="https://github.com/user-attachments/assets/92b876ba-5f8d-40a2-8d9d-3b305e64980d" />
 
 ---
 
@@ -233,17 +254,41 @@ Ambos thresholds se cumplieron en las dos ejecuciones. Los resultados son práct
 
 | Medición | Reposo | Carga pico (50 VUs) |
 |---|---|---|
-| Tiempo de transacción web (New Relic, promedio de la prueba) | ≈ 1 ms | ≈ 28 ms (promedio 21,75 ms) |
+| Tiempo de transacción web (New Relic) | ≈ 1 ms | ≈ 28–29 ms (promedio 21,75 ms en la ejecución 1 y 21,30 ms en la ejecución 2) |
 | Componente Postgres | ≈ 0 ms | ≈ 22 ms |
 | Componente Python | ≈ 1 ms | ≈ 5–6 ms |
-| Throughput | 0 rpm | ≈ 6 000 rpm (≈ 100 req/s) |
+| Throughput | 0 rpm | ≈ 6 000–6 200 rpm (≈ 100 req/s) |
+
+**Tiempo por endpoint (Transactions, ejecución 2):**
+
+| Transacción | Tiempo promedio | Tasa de error |
+|---|---|---|
+| `blacklist_query:BlacklistQueryResource` (GET) | 25,9 ms | 4,38 % |
+| `blacklist_create:BlacklistCreateResource` (POST) | 25,2 ms | 0 % |
+| `health:HealthResource` | 4,21 ms | 0 % |
+| `Flask.handle_http_exception` | 1,49 ms | 0 % |
+
+**Operaciones de base de datos (Databases, % del tiempo total en BD):**
+
+| Operación | % del tiempo |
+|---|---|
+| Postgres `rollback` | 31,1 % |
+| Postgres `blacklist select` | 29,46 % |
+| Postgres `blacklist insert` | 28,7 % |
+| Postgres `commit` | 10,74 % |
 
 **Hallazgos:**
 
-1. **La base de datos es el cuello de botella.** Con la carga pico, el tiempo atribuido a Postgres crece unas 20 veces, mientras que el de Python casi no cambia. La instancia `db.t3.micro` (2 vCPU con créditos de ráfaga, 1 GB de RAM) concentra la mayor parte del tiempo de cada transacción.
+1. **La base de datos es el cuello de botella.** Con la carga pico, el tiempo atribuido a Postgres crece unas 20 veces (de ≈ 1–2 ms a ≈ 22 ms), mientras que el de Python casi no cambia. La instancia `db.t3.micro` (2 vCPU con créditos de ráfaga, 1 GB de RAM) concentra la mayor parte del tiempo de cada transacción.
 2. **El tiempo sigue la carga.** La curva de tiempo de respuesta replica las etapas de k6: sube en la rampa (10 → 50 VUs), se mantiene en el pico y vuelve a la línea base al terminar. No quedó degradación residual.
-3. **Tiempo en servidor frente a tiempo de punta a punta.** New Relic mide ≈ 22 ms dentro de la aplicación, mientras que k6 mide 208 ms de promedio. La diferencia (≈ 180 ms) corresponde a la red entre el cliente y us-east-1 más el ALB. El mínimo de k6 (81 ms) es prácticamente la latencia de red base. En el entorno local, sin esa red, el promedio fue de 9 ms.
-4. **Encolamiento en el pico.** La mediana de k6 (221 ms) queda por encima del promedio (208 ms), y el p95 llega a 362 ms. Esto indica que, con 50 usuarios, la tarea (1 worker de gunicorn con 4 hilos sobre 0,5 vCPU) empieza a encolar solicitudes.
+3. **Tiempo en servidor frente a tiempo de punta a punta.** New Relic mide ≈ 22 ms dentro de la aplicación, mientras que k6 mide 207–208 ms de promedio. La diferencia (≈ 180 ms) corresponde a la red entre el cliente y us-east-1 más el ALB. El mínimo de k6 (≈ 80 ms) es prácticamente la latencia de red base. En el entorno local, sin esa red, el promedio fue de 9 ms.
+4. **Los endpoints que tocan la BD son ≈ 6 veces más lentos que `/health`.** Consulta y creación tardan ≈ 25 ms frente a 4,21 ms de `/health`, que no usa base de datos. Esa diferencia es el costo del acceso a Postgres bajo carga.
+5. **El `rollback` es la operación que más tiempo consume en la BD (31,1 %), por encima del `select` y del `insert`.** Hay dos fuentes probables:
+   - el cierre de la sesión de SQLAlchemy al final de cada request, que hace rollback incluso en las consultas de solo lectura;
+   - el `INSERT` duplicado que termina en `IntegrityError` → rollback → 409.
+
+   Es una oportunidad de optimización: validar el duplicado antes del `INSERT` y evitar transacciones innecesarias en las lecturas.
+6. **Encolamiento en el pico.** La mediana de k6 (≈ 220 ms) queda por encima del promedio (≈ 207 ms), y el p95 llega a 362 ms. Esto indica que, con 50 usuarios, la tarea (1 worker de gunicorn con 4 hilos sobre 0,5 vCPU) empieza a encolar solicitudes.
 
 #### Summary → Web transactions time
 <img width="1284" height="508" alt="Summary → Web transactions time" src="https://github.com/user-attachments/assets/0a67dc52-90b0-431b-87f1-2bbda931bd25" />
@@ -251,12 +296,13 @@ Ambos thresholds se cumplieron en las dos ejecuciones. Los resultados son práct
 #### Transactions → endpoints ordenados por tiempo
 <img width="1890" height="366" alt="Transactions → endpoints ordenados por tiempo" src="https://github.com/user-attachments/assets/04b7e41f-4efd-4cb6-80b0-ec701311e229" />
 
-#### Databases → operaciones SELECT / INSERT
-<img width="588" height="376" alt="Databases → operaciones SELECT / INSERT" src="https://github.com/user-attachments/assets/f5fa649f-4471-453b-a35e-a019294dcd98" />
+#### Databases → operaciones de Postgres
+<img width="588" height="376" alt="Databases → operaciones de Postgres" src="https://github.com/user-attachments/assets/f5fa649f-4471-453b-a35e-a019294dcd98" />
 
 **Recomendaciones:**
 
 - Escalar la base de datos (`db.t4g.small` o superior) o agregar un índice/caché para la consulta por email.
+- Reducir los rollbacks: validar duplicados antes del `INSERT` y no abrir transacciones en las lecturas.
 - Aumentar `--workers` de gunicorn y la CPU de la tarea, o configurar auto scaling de ECS por CPU o por número de solicitudes del ALB.
 
 ### 6.2 Apdex (10 %)
@@ -271,15 +317,16 @@ Apdex = (satisfechas + tolerables / 2) / total.
 
 | Entorno | Apdex |
 |---|---|
-| Local (pruebas manuales con errores provocados) | 0,82 |
+| Local (ventana completa de pruebas) | 0,98 |
+| Local (solo los primeros minutos, con errores provocados) | 0,82 |
 | Nube, prueba de estrés (promedio) | **0,98** |
 | Nube, peor punto del pico | ≈ 0,97 |
 
 **Hallazgos:**
 
-- Durante toda la prueba el Apdex se mantuvo en la franja **excelente** (> 0,94). Los tiempos en servidor (≈ 28 ms en el pico) están muy por debajo de T, así que prácticamente todas las transacciones son *satisfechas*.
-- La pequeña caída en el pico se explica por las transacciones con error, que New Relic cuenta como *frustradas* sin importar su tiempo, y no por lentitud.
-- En local el Apdex fue más bajo (0,82) porque la muestra era pequeña y tenía una proporción alta de errores provocados a propósito.
+- Durante toda la prueba el Apdex se mantuvo en la franja **excelente** (> 0,94). Los tiempos en servidor (≈ 29 ms en el pico) están muy por debajo de T, así que prácticamente todas las transacciones son *satisfechas*.
+- La pequeña caída en el pico se explica por las transacciones con error (los 401), que New Relic cuenta como *frustradas* sin importar su tiempo, y no por lentitud.
+- En local el Apdex bajó a 0,82 solo durante los primeros minutos, porque la muestra era pequeña y tenía una proporción alta de errores provocados a propósito. En la ventana completa fue de 0,98.
 - Por la diferencia de la sección 6.1, el Apdex del servidor no refleja la experiencia del usuario final: un usuario lejano de us-east-1 percibe ≈ 200–360 ms.
 
 #### Summary → Apdex score
@@ -289,18 +336,18 @@ Apdex = (satisfechas + tolerables / 2) / total.
 
 | Fuente | Valor |
 |---|---|
-| New Relic, tasa de error promedio | 1,87 % |
-| New Relic, tasa de error en el pico | ≈ 2 % |
+| New Relic, tasa de error promedio | 1,87 % (ejecución 1) y 1,75 % (ejecución 2) |
+| New Relic, tasa de error en el pico | ≈ 2–2,5 % |
+| New Relic, tasa de error de `BlacklistQueryResource` | 4,38 % |
 | k6, fallos inesperados | 5 de 40 419 (ejecución 1) y 6 de 40 557 (ejecución 2), 0,01 % en ambas |
 
 **Hallazgos:**
 
-- La tasa de ≈ 2 % coincide con la proporción de solicitudes **sin token (401)** que genera el script (10 % de las iteraciones ≈ 1 de cada 52 requests). New Relic las registra como error porque la validación JWT las rechaza.
-  *[Confirmar en Errors inbox qué códigos aparecen agrupados y su conteo]*
-- Las respuestas **409** (duplicado) y **400** (body inválido) son respuestas controladas de la API y no aparecen como errores del agente.
-  *[Confirmar en Errors inbox]*
-- Los **fallos inesperados** de k6 (5 y 6 por ejecución) se repartieron entre `health`, `create`, `query`, `query missing`, `duplicate` y `no token`, lo que apunta a un problema transitorio de capacidad (saturación de la tarea o del ALB) y no a un endpoint específico.
-  *[Completar con el código observado en Errors inbox / métricas 5XX del ALB]*
+- La tasa de ≈ 2 % coincide con la proporción de solicitudes **sin token (401)** que genera el script (10 % de las iteraciones ≈ 1 de cada 52 requests).
+- El desglose por transacción lo confirma: **todos los errores están en `BlacklistQueryResource` (4,38 %)**, que es donde el script envía el request sin token. Ese recurso recibe ≈ 2,1 requests por iteración (consulta existente, consulta inexistente y el 10 % sin token), y 0,1 / 2,1 ≈ 4,8 %, cercano al 4,38 % medido.
+- **Errors inbox** muestra un único grupo de error sin resolver: **`flask_jwt_extended.exceptions.NoAuthorizationError` – "Missing Authorization Header"**. Sus atributos lo identifican sin ambigüedad: `http.statusCode = 401`, `request.method = GET`, `request.uri = /blacklists/stress.…@example.com`, `request.headers.userAgent = Grafana k6/2.4.0` y transacción `blacklist_query:BlacklistQueryResource`. El stack trace llega hasta `flask_jwt_extended/view_decorators.py` (`_decode_jwt_from_request`). La gráfica de ocurrencias muestra dos bloques, uno por cada ejecución de la prueba. Errors inbox guarda una muestra de las ocurrencias, mientras que la tasa de error se calcula sobre todas las transacciones.
+- `BlacklistCreateResource` tiene **0 % de error** aunque devuelve 409 en cada iteración y 400 en el 10 %. Son respuestas controladas de la API, devueltas como respuesta normal y no como excepción, así que el agente no las cuenta como error.
+- Los **fallos inesperados** de k6 (5 y 6 por ejecución) se repartieron entre `health`, `create`, `query`, `query missing`, `duplicate` y `no token`, así que no se concentran en un endpoint. Ninguno aparece como error de la aplicación en Errors inbox, donde el único grupo es el 401. Por eso, lo más probable es que ocurrieran **antes de llegar al contenedor**: cortes de conexión o respuestas del ALB/red durante el pico, y no excepciones del código. Con 6 casos de ≈ 40 000 (0,01 %), su impacto es despreciable. Para confirmarlo habría que revisar las métricas `HTTPCode_ELB_5XX` y `TargetConnectionErrorCount` del ALB en CloudWatch.
 - Fuera de la prueba, la tasa de error vuelve a 0 %.
 
 #### Summary → Errors
@@ -323,7 +370,17 @@ Se creó la política **`blacklist-cloud-policy`** (agrupación: *One issue per 
 
 1. **Primera ejecución (umbrales iniciales): no se disparó ninguna alerta.** El p95 en servidor (≈ 30 ms), la tasa de error (≈ 2 %) y el Apdex (≈ 0,97) quedaron todos dentro de los límites. Los umbrales se habían fijado de forma genérica, sin una línea base del servicio.
 2. **Calibración.** Con la línea base medida en reposo (≈ 1 ms, 0 % de errores) se ajustaron los umbrales para detectar la degradación observada bajo carga: p95 > 20 ms y errores > 1 %.
-3. **Segunda ejecución (umbrales calibrados):** *[Completar: qué alertas pasaron a Active, a qué hora (minuto de la prueba) y cuándo se cerraron al terminar la carga]*.
+3. **Segunda ejecución (umbrales calibrados): se dispararon dos alertas críticas** (horas en UTC, según New Relic):
+
+   | Condición | Disparo | Abierta | Cerrada | Duración |
+   |---|---|---|---|---|
+   | Tasa de errores alta | error rate > 1 % durante 1 min | ≈ 5:21 | 5:31 | 10 min |
+   | Tiempo de respuesta p95 alto | p95 > 20 ms durante 1 min | 5:26 | 5:31 | 5 min |
+   | Apdex bajo | No se disparó (Apdex mínimo ≈ 0,97) | — | — | — |
+
+   Las dos incidencias tienen prioridad **Critical** y quedaron en estado **Closed** en *Issues & Activity*. La de errores se abrió primero porque los 401 aparecen desde los 10 usuarios virtuales. La de tiempo de respuesta se abrió solo cuando la carga se acercó a 50 usuarios virtuales y Postgres pasó de ≈ 2 ms a ≈ 22 ms.
+
+   Las bandas rojas de *Critical alerts* en las gráficas de New Relic (≈ 5:21–5:32) coinciden con la rampa y el pico de 50 usuarios virtuales, y el *Activity stream* del servicio registra los eventos **Critical Issue Activated** y **Critical Issue Closed**. Las dos incidencias se **cerraron solas** cuando la carga bajó y las métricas volvieron a la línea base. Esto demuestra el ciclo completo: detección, incidencia abierta y resolución automática.
 4. **Lección:** un umbral solo sirve si está basado en el comportamiento medido del servicio. La alerta de p95 en servidor no detecta la latencia de red que percibe el usuario. Para eso se recomienda complementar con un monitor sintético de New Relic desde la región de los usuarios.
 
 #### Alert Conditions de blacklist-cloud-policy
@@ -341,8 +398,9 @@ Se creó la política **`blacklist-cloud-policy`** (agrupación: *One issue per 
 
 - La instrumentación con `newrelic-admin run-program` y variables de entorno permitió monitorear el servicio **sin modificar el código** y con la misma imagen Docker en local y en la nube. Solo cambia el nombre de la aplicación y la fuente de la llave (`.env` frente a SSM).
 - El pipeline de CI/CD despliega la versión instrumentada a Fargate con blue/green, y New Relic reportó desde el primer despliegue.
-- Bajo 50 usuarios concurrentes (≈ 100 req/s en el pico), el servicio cumplió los criterios de aceptación (p95 de 362 ms de punta a punta, 99,98 % de checks) con Apdex 0,98. El componente que más se degrada es **PostgreSQL**.
-- Las alertas deben calibrarse con una línea base medida. Con umbrales genéricos, una degradación de 20 veces en el tiempo de la base de datos pasó desapercibida.
+- Bajo 50 usuarios concurrentes (≈ 100 req/s en el pico), el servicio cumplió los criterios de aceptación (p95 de 362 ms de punta a punta, 99,98 % de checks) con Apdex 0,98. El componente que más se degrada es **PostgreSQL**, y dentro de él, el `rollback` es la operación más costosa.
+- Los únicos errores de la aplicación son los 401 provocados a propósito por la prueba. Los 400 y 409 son respuestas controladas que el agente no cuenta como error.
+- Las alertas deben calibrarse con una línea base medida. Con umbrales genéricos, una degradación de 20 veces en el tiempo de la base de datos pasó desapercibida. Con umbrales calibrados, las dos alertas se abrieron durante el pico y se cerraron solas al terminar la carga.
 
 ---
 
