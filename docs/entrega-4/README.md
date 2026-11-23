@@ -56,7 +56,8 @@ Se creó una cuenta gratuita en New Relic. Para el agente se usa la llave de tip
 - En local se carga desde el archivo `.env`, que está en `.gitignore`.
 - En la nube se lee desde SSM Parameter Store.
 
-> 📷 *[Pantallazo: página API Keys con la llave INGEST - LICENSE, valor oculto]*
+#### Página API Keys con la llave INGEST - LICENSE, valor oculto
+<img width="2553" height="812" alt="Página API Keys con la llave INGEST - LICENSE, valor oculto" src="https://github.com/user-attachments/assets/4f91e26d-4d00-4f27-960a-f64ec76c7ec0" />
 
 ### 3.2 Configuración en el repositorio y verificación en desarrollo (30 %)
 
@@ -106,8 +107,11 @@ Se generó tráfico con Postman (201, 200, 409, 400 y 401) y con una prueba cort
 
 El servicio **`blacklist-service-local`** apareció en **APM & Services** con datos de tiempo de respuesta, desglosados entre Python y Postgres, además de Apdex, throughput y errores.
 
-> 📷 *[Pantallazo: APM & Services → blacklist-service-local → Summary]*
-> 📷 *[Pantallazo: resumen de k6 local]*
+#### APM & Services → blacklist-service-local → Summary
+<img width="2553" height="1204" alt="APM & Services → blacklist-service-local → Summary" src="https://github.com/user-attachments/assets/95966974-f590-4a00-a5cc-e190c3d03a41" />
+
+#### Resumen de k6 local
+<img width="1330" height="1005" alt="Resumen de k6 local" src="https://github.com/user-attachments/assets/92b876ba-5f8d-40a2-8d9d-3b305e64980d" />
 
 ### 3.3 Despliegue en la nube con el pipeline de CI/CD y verificación (15 %)
 
@@ -139,10 +143,17 @@ Ejecución: `c5a959e6-dbb1-4e90-8964-5d94655fad8d`. Etapas **Source**, **Build**
 
 Verificación: `GET http://<ALB>/health` → `{"status": "ok"}`. El servicio **`blacklist-service-cloud`** reporta en New Relic APM.
 
-> 📷 *[Pantallazo: CodePipeline con las 3 etapas en verde]*
-> 📷 *[Pantallazo: CodeBuild → Informes de pytest]*
-> 📷 *[Pantallazo: CodeDeploy → implementación blue/green completada]*
-> 📷 *[Pantallazo: APM & Services → blacklist-service-cloud]*
+#### CodePipeline con las 3 etapas en verde
+<img width="2540" height="1078" alt="CodePipeline con las 3 etapas en verde" src="https://github.com/user-attachments/assets/75eac681-f234-4ba2-aa0b-52ad1a3a089a" />
+
+#### CodeBuild → Informes de pytest
+<img width="858" height="521" alt="CodeBuild → Informes de pytest" src="https://github.com/user-attachments/assets/6bf8c6bf-6db2-485a-9817-d5377e6f6850" />
+
+#### CodeDeploy → implementación blue/green completada
+<img width="1472" height="1341" alt="CodeDeploy → implementación blue/green completada" src="https://github.com/user-attachments/assets/c140da17-8e3c-4776-8dc9-70558c69edc3" />
+
+#### APM & Services → blacklist-service-cloud
+<img width="2260" height="1137" alt="APM & Services → blacklist-service-cloud" src="https://github.com/user-attachments/assets/01bfd563-6b3d-4c32-b910-9bbcf5290732" />
 
 ---
 
@@ -234,9 +245,14 @@ Ambos thresholds se cumplieron en las dos ejecuciones. Los resultados son práct
 3. **Tiempo en servidor frente a tiempo de punta a punta.** New Relic mide ≈ 22 ms dentro de la aplicación, mientras que k6 mide 208 ms de promedio. La diferencia (≈ 180 ms) corresponde a la red entre el cliente y us-east-1 más el ALB. El mínimo de k6 (81 ms) es prácticamente la latencia de red base. En el entorno local, sin esa red, el promedio fue de 9 ms.
 4. **Encolamiento en el pico.** La mediana de k6 (221 ms) queda por encima del promedio (208 ms), y el p95 llega a 362 ms. Esto indica que, con 50 usuarios, la tarea (1 worker de gunicorn con 4 hilos sobre 0,5 vCPU) empieza a encolar solicitudes.
 
-> 📷 *[Pantallazo: Summary → Web transactions time]*
-> 📷 *[Pantallazo: Transactions → endpoints ordenados por tiempo]*
-> 📷 *[Pantallazo: Databases → operaciones SELECT / INSERT]*
+#### Summary → Web transactions time
+<img width="1284" height="508" alt="Summary → Web transactions time" src="https://github.com/user-attachments/assets/0a67dc52-90b0-431b-87f1-2bbda931bd25" />
+
+#### Transactions → endpoints ordenados por tiempo
+<img width="1890" height="366" alt="Transactions → endpoints ordenados por tiempo" src="https://github.com/user-attachments/assets/04b7e41f-4efd-4cb6-80b0-ec701311e229" />
+
+#### Databases → operaciones SELECT / INSERT
+<img width="588" height="376" alt="Databases → operaciones SELECT / INSERT" src="https://github.com/user-attachments/assets/f5fa649f-4471-453b-a35e-a019294dcd98" />
 
 **Recomendaciones:**
 
@@ -266,7 +282,8 @@ Apdex = (satisfechas + tolerables / 2) / total.
 - En local el Apdex fue más bajo (0,82) porque la muestra era pequeña y tenía una proporción alta de errores provocados a propósito.
 - Por la diferencia de la sección 6.1, el Apdex del servidor no refleja la experiencia del usuario final: un usuario lejano de us-east-1 percibe ≈ 200–360 ms.
 
-> 📷 *[Pantallazo: Summary → Apdex score]*
+#### Summary → Apdex score
+<img width="629" height="486" alt="Summary → Apdex score" src="https://github.com/user-attachments/assets/f831b789-a054-486b-af45-b52a5e19544d" />
 
 ### 6.3 Errores (10 %)
 
@@ -286,8 +303,11 @@ Apdex = (satisfechas + tolerables / 2) / total.
   *[Completar con el código observado en Errors inbox / métricas 5XX del ALB]*
 - Fuera de la prueba, la tasa de error vuelve a 0 %.
 
-> 📷 *[Pantallazo: Summary → Errors]*
-> 📷 *[Pantallazo: Errors inbox]*
+#### Summary → Errors
+<img width="946" height="328" alt="Summary → Errors" src="https://github.com/user-attachments/assets/44e07c49-dc60-4079-a787-cbd5d0fe69ac" />
+
+#### Errors inbox
+<img width="977" height="1610" alt="Errors inbox" src="https://github.com/user-attachments/assets/ab8d054c-55ab-4e35-acdd-806a8e6ebcbb" />
 
 ### 6.4 Alertas (10 %)
 
